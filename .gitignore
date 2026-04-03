@@ -1,0 +1,17 @@
+# Environment — NUNCA commitar o .env (contém tokens e IDs de conta)
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Logs
+nohup.out
+*.log
+
+# macOS
+.DS_Store
