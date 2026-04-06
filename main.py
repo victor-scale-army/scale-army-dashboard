@@ -39,6 +39,8 @@ _PURCHASE_TYPES   = ("purchase", "omni_purchase", "offsite_conversion.fb_pixel_p
 _cv_sched_types: tuple = ()
 _cv_lead_web_types: tuple = ()
 _cv_loaded: bool = False
+# LP cache: ad_id → lp url, populated lazily by api_lp / api_creatives
+_ad_lp_cache: dict = {}
 _INS_FIELDS = "spend,impressions,clicks,reach,actions,video_play_actions"
 
 
@@ -383,6 +385,7 @@ async def api_metrics(
         summary[f"{k}_delta"] = _pct(summary_curr.get(k), summary_prev.get(k))
 
     avg_cpl = summary_curr.get("cpl")
+    avg_cps = summary_curr.get("cost_per_schedule")
     items = []
     for row in merged.values():
         sp, im, lc, ld, ls = row["spend"], row["impressions"], row["link_clicks"], row["leads"], row["leads_schedule"]
@@ -397,6 +400,7 @@ async def api_metrics(
         risks = []
         if row["ctr"] < 0.5 and im > 1000:        risks.append("Low CTR")
         if row["cpl"] and avg_cpl and row["cpl"] > avg_cpl * 2: risks.append("High CPL")
+        if row["cost_per_schedule"] and avg_cps and row["cost_per_schedule"] > avg_cps * 2 and ls > 0: risks.append("High Cost/Appt")
         if sp > 30 and ld == 0 and im > 500:       risks.append("No conversions")
         row["risks"] = risks
         cinfo = campaign_data.get(row["name"], {})
@@ -424,6 +428,7 @@ async def api_daily(
     until: str = None,
     account_id: str = None,
 ):
+    await _load_custom_conversions()
     token = get_token()
     accounts_list = get_accounts()
     if not token or not accounts_list:
@@ -434,22 +439,50 @@ async def api_daily(
     )
     accounts = ([account_id] if account_id and account_id in accounts_list else accounts_list)
 
+    hidden_lower      = {h.lower() for h in get_hidden_campaigns()}
+    sched_excl_lower  = {s.lower() for s in get_sched_exclude()}
+
     by_date: dict = {}
     for acc in accounts:
-        for row in await _get_daily_insights(acc, token, d_since, d_until):
+        rows = await _meta_get_all(acc, token, {
+            "fields": f"campaign_name,{_INS_FIELDS}",
+            "time_range": json.dumps({"since": d_since, "until": d_until}),
+            "time_increment": 1, "level": "campaign",
+            "action_attribution_windows": _ATTR_WINDOWS,
+        })
+        for row in rows:
+            camp = (row.get("campaign_name") or "").strip().lower()
+            if camp in hidden_lower:
+                continue
             day = row.get("date_start", "")
             if day not in by_date:
-                by_date[day] = {"date": day, "spend": 0.0, "impressions": 0, "clicks": 0, "leads": 0, "leads_schedule": 0}
+                by_date[day] = {"date": day, "spend": 0.0, "impressions": 0, "clicks": 0,
+                                "link_clicks": 0, "landing_page_views": 0, "leads": 0, "leads_schedule": 0}
             acts = row.get("actions", [])
-            by_date[day]["spend"]          += float(row.get("spend", 0))
-            by_date[day]["impressions"]    += int(row.get("impressions", 0))
-            by_date[day]["clicks"]         += int(row.get("clicks", 0))
-            by_date[day]["leads"]          += _extract_action(acts, _LEAD_FORM_TYPES + _LEAD_WEB_TYPES + _cv_lead_web_types + _cv_sched_types + ("schedule",))
-            by_date[day]["leads_schedule"] += _extract_action(acts, _cv_sched_types + ("schedule",))
+            ls = _extract_action(acts, _cv_sched_types + ("schedule",))
+            pc = _extract_action(acts, ("offsite_conversion.fb_pixel_custom",))
+            if camp not in sched_excl_lower:
+                ls = max(ls, pc)
+            by_date[day]["spend"]               += float(row.get("spend", 0))
+            by_date[day]["impressions"]         += int(row.get("impressions", 0))
+            by_date[day]["clicks"]              += int(row.get("clicks", 0))
+            by_date[day]["link_clicks"]         += _extract_action(acts, ("link_click",))
+            by_date[day]["landing_page_views"]  += _extract_action(acts, ("landing_page_view",))
+            by_date[day]["leads"]               += _extract_action(acts, _LEAD_FORM_TYPES + _LEAD_WEB_TYPES + _cv_lead_web_types + _cv_sched_types + ("schedule",))
+            by_date[day]["leads_schedule"]      += ls
 
     days = sorted(by_date.values(), key=lambda x: x["date"])
     for d in days:
-        d["spend"] = round(d["spend"], 2)
+        sp = d["spend"]; im = d["impressions"]; lc = d["link_clicks"]
+        ld = d["leads"]; ls = d["leads_schedule"]; lpv = d["landing_page_views"]
+        d["spend"]         = round(sp, 2)
+        d["ctr"]           = round(lc / im * 100 if im else 0, 2)
+        d["cpm"]           = round(sp / im * 1000 if im else 0, 2)
+        d["cpc"]           = round(sp / lc if lc else 0, 2)
+        d["cpl"]           = round(sp / ld if ld else 0, 2) if ld else None
+        d["connect_rate"]  = round(lpv / lc * 100 if lc else 0, 2)
+        d["conv_rate"]     = round(ld / lpv * 100 if lpv else 0, 2)
+        d["cost_per_schedule"] = round(sp / ls if ls else 0, 2) if ls else None
     return JSONResponse({"days": days})
 
 
@@ -524,6 +557,162 @@ async def api_creatives(
 
     all_ads.sort(key=lambda x: x["spend"], reverse=True)
     return JSONResponse({"ads": all_ads, "since": d_since, "until": d_until})
+
+
+@app.get("/api/lp")
+async def api_lp(
+    preset: str = "last_7d",
+    since: str = None,
+    until: str = None,
+    account_id: str = None,
+):
+    await _load_custom_conversions()
+    token = get_token()
+    accounts_list = get_accounts()
+    if not token or not accounts_list:
+        raise HTTPException(status_code=503, detail="META_ACCESS_TOKEN ou META_ACCOUNT_IDS não configurados no .env")
+
+    d_since, d_until, _, _ = _compute_period(
+        preset if not (since and until) else None, since, until
+    )
+    accounts = ([account_id] if account_id and account_id in accounts_list else accounts_list)
+
+    lp_map: dict = {}
+    hidden_c = get_hidden_campaigns()
+    hidden_c_lower = {h.lower() for h in hidden_c}
+    sched_exclude = get_sched_exclude()
+    sched_exclude_lower = {s.lower() for s in sched_exclude}
+
+    for acc in accounts:
+        rows = await _meta_get_all(acc, token, {
+            "fields": f"ad_id,ad_name,campaign_id,campaign_name,{_INS_FIELDS}",
+            "time_range": json.dumps({"since": d_since, "until": d_until}),
+            "level": "ad",
+            "action_attribution_windows": _ATTR_WINDOWS,
+        })
+        rows = [r for r in rows if (r.get("campaign_name") or "").strip().lower() not in hidden_c_lower]
+        ad_ids = [r.get("ad_id", "") for r in rows if r.get("ad_id")]
+        creatives = await _fetch_ad_creatives_by_ids(ad_ids, token)
+        for aid, info in creatives.items():
+            _ad_lp_cache[aid] = info.get("lp") or ""
+
+        for row in rows:
+            ad_id = row.get("ad_id", "")
+            m = _row_metrics(row)
+            cinfo = creatives.get(ad_id, {})
+            lp = cinfo.get("lp") or "No LP"
+
+            camp_name = (row.get("campaign_name") or "").strip().lower()
+            ls = m["leads_schedule"]
+            if camp_name not in sched_exclude_lower:
+                ls = max(ls, m.get("pixel_custom", 0))
+
+            if lp not in lp_map:
+                lp_map[lp] = {"lp": lp, "spend": 0.0, "impressions": 0, "clicks": 0,
+                               "link_clicks": 0, "landing_page_views": 0, "reach": 0,
+                               "leads": 0, "leads_form": 0, "leads_web": 0, "leads_schedule": 0,
+                               "video_views": 0, "thruplays": 0, "ad_count": 0}
+            e = lp_map[lp]
+            for k in ("impressions","clicks","link_clicks","landing_page_views","reach","leads","leads_form","leads_web","video_views","thruplays"):
+                e[k] += m[k]
+            e["spend"]          += m["spend"]
+            e["leads_schedule"] += ls
+            e["ad_count"]       += 1
+
+    result = []
+    for e in lp_map.values():
+        sp = e["spend"]; im = e["impressions"]; lc = e["link_clicks"]
+        ld = e["leads"]; ls2 = e["leads_schedule"]; lpv = e["landing_page_views"]
+        e["spend"]             = round(sp, 2)
+        e["ctr"]               = round(lc / im * 100 if im else 0, 2)
+        e["cpm"]               = round(sp / im * 1000 if im else 0, 2)
+        e["cpc"]               = round(sp / lc if lc else 0, 2) or None
+        e["cpl"]               = round(sp / ld if ld else 0, 2) or None
+        e["connect_rate"]      = round(lpv / lc * 100 if lc else 0, 2)
+        e["cost_per_schedule"] = round(sp / ls2 if ls2 else 0, 2) or None
+        e["conv_rate"]         = round(ld / lpv * 100 if lpv else 0, 2)
+        result.append(e)
+
+    result.sort(key=lambda x: x["spend"], reverse=True)
+    return JSONResponse({"items": result, "since": d_since, "until": d_until})
+
+
+@app.get("/api/lp_daily")
+async def api_lp_daily(
+    preset: str = "last_7d",
+    since: str = None,
+    until: str = None,
+    account_id: str = None,
+    q: str = "",
+):
+    await _load_custom_conversions()
+    token = get_token()
+    accounts_list = get_accounts()
+    if not token or not accounts_list:
+        raise HTTPException(status_code=503, detail="META_ACCESS_TOKEN ou META_ACCOUNT_IDS não configurados no .env")
+
+    d_since, d_until, _, _ = _compute_period(
+        preset if not (since and until) else None, since, until
+    )
+    accounts = ([account_id] if account_id and account_id in accounts_list else accounts_list)
+    hidden_c_lower = {h.lower() for h in get_hidden_campaigns()}
+    sched_exclude_lower = {s.lower() for s in get_sched_exclude()}
+    q_lower = q.strip().lower()
+
+    by_date: dict = {}
+    for acc in accounts:
+        rows = await _meta_get_all(acc, token, {
+            "fields": f"ad_id,campaign_name,date_start,{_INS_FIELDS}",
+            "time_range": json.dumps({"since": d_since, "until": d_until}),
+            "level": "ad",
+            "time_increment": 1,
+            "action_attribution_windows": _ATTR_WINDOWS,
+        })
+        rows = [r for r in rows if (r.get("campaign_name") or "").strip().lower() not in hidden_c_lower]
+
+        # Populate LP cache for any new ad_ids
+        unknown_ids = [r["ad_id"] for r in rows if r.get("ad_id") and r.get("ad_id") not in _ad_lp_cache]
+        if unknown_ids:
+            new_creatives = await _fetch_ad_creatives_by_ids(list(set(unknown_ids)), token)
+            for aid, info in new_creatives.items():
+                _ad_lp_cache[aid] = info.get("lp") or ""
+
+        for row in rows:
+            ad_id = row.get("ad_id", "")
+            lp = _ad_lp_cache.get(ad_id, "")
+            if q_lower and q_lower not in lp.lower():
+                continue
+            day = row.get("date_start", "")
+            if day not in by_date:
+                by_date[day] = {"date": day, "spend": 0.0, "impressions": 0, "clicks": 0,
+                                "link_clicks": 0, "landing_page_views": 0, "leads": 0, "leads_schedule": 0}
+            m = _row_metrics(row)
+            camp_name = (row.get("campaign_name") or "").strip().lower()
+            ls = m["leads_schedule"]
+            if camp_name not in sched_exclude_lower:
+                ls = max(ls, m.get("pixel_custom", 0))
+            d = by_date[day]
+            d["spend"]              += m["spend"]
+            d["impressions"]        += m["impressions"]
+            d["clicks"]             += m["clicks"]
+            d["link_clicks"]        += m["link_clicks"]
+            d["landing_page_views"] += m["landing_page_views"]
+            d["leads"]              += m["leads"]
+            d["leads_schedule"]     += ls
+
+    days = sorted(by_date.values(), key=lambda x: x["date"])
+    for d in days:
+        sp = d["spend"]; im = d["impressions"]; lc = d["link_clicks"]
+        ld = d["leads"]; ls = d["leads_schedule"]; lpv = d["landing_page_views"]
+        d["spend"]         = round(sp, 2)
+        d["ctr"]           = round(lc / im * 100 if im else 0, 2)
+        d["cpm"]           = round(sp / im * 1000 if im else 0, 2)
+        d["cpc"]           = round(sp / lc if lc else 0, 2)
+        d["cpl"]           = round(sp / ld if ld else 0, 2) if ld else None
+        d["connect_rate"]  = round(lpv / lc * 100 if lc else 0, 2)
+        d["conv_rate"]     = round(ld / lpv * 100 if lpv else 0, 2)
+        d["cost_per_schedule"] = round(sp / ls if ls else 0, 2) if ls else None
+    return JSONResponse({"days": days, "since": d_since, "until": d_until, "q": q})
 
 
 @app.get("/api/debug/actions")

@@ -98,17 +98,20 @@
     .level-tabs { display:flex; background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
     .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; overflow-x:auto; }
     .data-table { border-collapse:collapse; table-layout:fixed; }
-    .data-table th { position:relative; text-align:left; font-size:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; padding:8px 12px; border-bottom:1px solid var(--border); white-space:nowrap; overflow:hidden; user-select:none; cursor:pointer; }
+    .data-table th { position:relative; text-align:center; font-size:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; padding:8px 20px 6px 12px; border-bottom:1px solid var(--border); white-space:normal; word-break:break-word; line-height:1.25; overflow:hidden; text-overflow:ellipsis; vertical-align:bottom; user-select:none; cursor:pointer; min-width:0; }
+    .data-table th:first-child { text-align:left; }
     .data-table th:hover { color:var(--text); }
     .th-sort-icon { margin-left:4px; font-size:.65rem; color:var(--muted); }
     .data-table th.sort-asc .th-sort-icon::after  { content:'▲'; color:var(--accent); }
     .data-table th.sort-desc .th-sort-icon::after { content:'▼'; color:var(--accent); }
     .data-table th:not(.sort-asc):not(.sort-desc) .th-sort-icon::after { content:'↕'; }
-    .data-table td { padding:10px 12px; border-bottom:1px solid var(--border); font-size:.85rem; vertical-align:middle; overflow:hidden; white-space:nowrap; }
+    .data-table td { padding:10px 12px; border-bottom:1px solid var(--border); font-size:.85rem; vertical-align:middle; overflow:hidden; white-space:nowrap; text-align:center; }
+    .data-table td:first-child { text-align:left; }
     .data-table tr:last-child td { border-bottom:none; }
     .data-table tr:hover td { background:#ffffff05; }
     .name-text { display:block; overflow:hidden; text-overflow:ellipsis; }
     .risk-tag { display:inline-block; font-size:.68rem; padding:2px 6px; border-radius:20px; background:#3a2000; color:#ffaa44; margin-left:5px; }
+    .risk-tag.appt { background:#2a1040; color:#c084fc; }
     .num { color:var(--text); }
     .num.warn { color:#f59e0b; }
     .num.muted { color:var(--muted); }
@@ -127,6 +130,8 @@
     #colMenu .cm-sep { border-top:1px solid var(--border); margin:4px 0; }
     .total-row td { font-weight:700; border-top:2px solid var(--border) !important; background:#ffffff07; }
     .total-row td:first-child { color:var(--muted); font-size:.8rem; letter-spacing:.04em; text-transform:uppercase; }
+    .lp-link { color:var(--text); text-decoration:none; font-size:.8rem; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:280px; }
+    .lp-link:hover { color:var(--accent); }
     .creative-grid { display:flex; flex-wrap:wrap; gap:14px; }
     .cr-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; width:220px; flex-shrink:0; }
     .cr-card.cr-inactive { opacity:.55; }
@@ -328,7 +333,7 @@
 
     <div class="chart-wrap" id="chartWrap">
       <div class="chart-header" style="flex-wrap:wrap;gap:8px;">
-        <span class="chart-title">Daily evolution</span>
+        <span class="chart-title" id="chartTitle">Daily evolution</span>
         <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:6px;">
             <span class="chart-sel-label">Bar</span>
@@ -348,7 +353,7 @@
               <option value="leads_schedule">Appointments</option>
             </select>
           </div>
-          <div style="display:flex;align-items:center;gap:6px;">
+          <div id="chartLineSelectors" style="display:flex;align-items:center;gap:6px;">
             <span class="chart-sel-label">Line</span>
             <select class="chart-select" id="chartLine1" onchange="onChartSelChange()">
               <option value="cpm" selected>CPM</option>
@@ -357,6 +362,8 @@
               <option value="cpc">CPC</option>
               <option value="ctr">CTR</option>
               <option value="appt">Cost/Appt</option>
+              <option value="connect_rate">Connect Rate</option>
+              <option value="conv_rate">Conv. Rate</option>
             </select>
             <select class="chart-select" id="chartLine2" onchange="onChartSelChange()">
               <option value="none">+ Add line</option>
@@ -365,6 +372,8 @@
               <option value="cpc">CPC</option>
               <option value="ctr">CTR</option>
               <option value="appt">Cost/Appt</option>
+              <option value="connect_rate">Connect Rate</option>
+              <option value="conv_rate">Conv. Rate</option>
             </select>
           </div>
         </div>
@@ -378,6 +387,7 @@
           <button class="tab active" data-l="campaign"  onclick="setLevel(this)">Campaigns</button>
           <button class="tab"        data-l="adset"     onclick="setLevel(this)">Ad Sets</button>
           <button class="tab"        data-l="creative"  onclick="setLevel(this)">Creatives</button>
+          <button class="tab"        data-l="lp"        onclick="setLevel(this)">Landing Pages</button>
         </div>
       </div>
       <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
@@ -429,6 +439,16 @@
           <colgroup id="crColGroup"></colgroup>
           <thead><tr id="crTableHead"></tr></thead>
           <tbody id="crTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="lpView" style="display:none;">
+      <div class="table-wrap" style="overflow-x:auto;">
+        <table class="data-table" id="lpDataTable">
+          <colgroup id="lpColGroup"></colgroup>
+          <thead><tr id="lpTableHead"></tr></thead>
+          <tbody id="lpTableBody"></tbody>
         </table>
       </div>
     </div>
@@ -609,12 +629,30 @@ const CR_COLS = [
   { key:'thruplays',         label:'ThruPlay',      always:false, defaultW:85,  render: a=>numN(a.thruplays) },
   { key:'impressions',       label:'Impressions',   always:false, defaultW:105, render: a=>numN(a.impressions) },
 ];
-const DEFAULT_PREFS = { hiddenCols:['reach','video_views','thruplays','impressions'], hiddenMetrics:['reach','impressions','video_views','thruplays'], metricOrder:[], customMetrics:[], colWidths:{}, colOrder:[], hiddenCrCols:['campaign_name','impressions','thruplays','link_clicks','landing_page_views','connect_rate'], crColOrder:[], crColWidths:{} };
+function shortLp(u){if(!u||u==='No LP')return u||'No LP';try{const x=new URL(u);return x.hostname+(x.pathname&&x.pathname!=='/'?x.pathname:'');}catch{return u;}}
+const LP_COLS = [
+  { key:'lp',              label:'Landing Page',  always:true,  defaultW:300, render:a=>a.lp&&a.lp!=='No LP'?`<a href="${esc(a.lp)}" target="_blank" class="lp-link" title="${esc(a.lp)}">${esc(shortLp(a.lp))}</a>`:`<span class="lp-link" style="color:var(--muted);cursor:default">No LP <span style="font-size:.72rem;opacity:.7">(Instant Form)</span></span>` },
+  { key:'ad_count',        label:'Ads',           always:false, defaultW:65,  render:a=>`<span class="num">${a.ad_count}</span>` },
+  { key:'spend',           label:'Investment',    always:false, defaultW:120, render:a=>numR(a.spend) },
+  { key:'leads',           label:'Leads',         always:false, defaultW:70,  render:a=>numN(a.leads) },
+  { key:'cpl',             label:'CPL',           always:false, defaultW:95,  render:a=>numR(a.cpl) },
+  { key:'leads_schedule',  label:'Appointments',  always:false, defaultW:105, render:a=>numN(a.leads_schedule) },
+  { key:'cost_per_schedule',label:'Cost/Appt.',   always:false, defaultW:95,  render:a=>numR(a.cost_per_schedule) },
+  { key:'ctr',             label:'CTR',           always:false, defaultW:80,  render:a=>numPct(a.ctr) },
+  { key:'cpm',             label:'CPM',           always:false, defaultW:95,  render:a=>numR(a.cpm) },
+  { key:'cpc',             label:'CPC',           always:false, defaultW:95,  render:a=>numR(a.cpc) },
+  { key:'link_clicks',     label:'Link Clicks',   always:false, defaultW:95,  render:a=>numN(a.link_clicks) },
+  { key:'landing_page_views',label:'LP Views',    always:false, defaultW:85,  render:a=>numN(a.landing_page_views) },
+  { key:'connect_rate',    label:'Connect Rate',  always:false, defaultW:105, render:a=>numPct(a.connect_rate) },
+  { key:'conv_rate',       label:'Conv. Rate',    always:false, defaultW:100, render:a=>numPct(a.conv_rate) },
+  { key:'impressions',     label:'Impressions',   always:false, defaultW:105, render:a=>numN(a.impressions) },
+];
+const DEFAULT_PREFS = { hiddenCols:['reach','video_views','thruplays','impressions'], hiddenMetrics:['reach','impressions','video_views','thruplays'], metricOrder:[], customMetrics:[], colWidths:{}, colOrder:[], hiddenCrCols:['campaign_name','impressions','thruplays','link_clicks','landing_page_views','connect_rate'], crColOrder:[], crColWidths:{}, hiddenLpCols:['link_clicks','impressions','connect_rate'], lpColOrder:[], lpColWidths:{} };
 function loadPrefs() { try { return { ...DEFAULT_PREFS, ...JSON.parse(localStorage.getItem(PREF_KEY)||'{}') }; } catch { return { ...DEFAULT_PREFS }; } }
 function savePrefs(p) { localStorage.setItem(PREF_KEY, JSON.stringify(p)); }
 let prefs = loadPrefs();
 
-let state = { preset:'last_7d', since:null, until:null, accountId:null, level:'campaign', data:null, dailyData:null, creativeData:null, sort:{ key:'spend', dir:'desc' }, crSort:{ key:'spend', dir:'desc' } };
+let state = { preset:'last_7d', since:null, until:null, accountId:null, level:'campaign', data:null, dailyData:null, creativeData:null, lpData:null, sort:{ key:'spend', dir:'desc' }, crSort:{ key:'spend', dir:'desc' }, lpSort:{ key:'spend', dir:'desc' } };
 let chart = null;
 
 function allMetricDefs() { return [...BASE_METRICS, ...prefs.customMetrics.map(cm => ({ key:cm.id, label:cm.name, custom:true, fmt: v => fmtCustom(v,cm.format), invert: cm.invert===true||cm.invert==='true' }))]; }
@@ -651,11 +689,22 @@ async function load() {
   const qs = buildQS();
   try {
     if (state.level === 'creative') {
-      const res = await fetch(`/api/creatives?${qs}`);
-      if (!res.ok) { const e = await res.json(); throw new Error(e.detail||'Error'); }
-      state.creativeData = await res.json(); state.data = null; state.dailyData = null;
-      resetMs(); hide('metricsGrid'); hide('chartWrap');
-      renderPeriodLabelCreative(); renderItems();
+      const [crRes, dRes] = await Promise.all([fetch(`/api/creatives?${qs}`), fetch(`/api/daily?${qs}`)]);
+      if (!crRes.ok) { const e = await crRes.json(); throw new Error(e.detail||'Error'); }
+      state.creativeData = await crRes.json(); state.dailyData = dRes.ok ? await dRes.json() : null; state.data = null; state.lpData = null;
+      resetMs(); show('metricsGrid'); show('chartWrap');
+      renderPeriodLabelCreative();
+      renderMetrics(computeSummaryFromItems(state.creativeData.ads||[]), false);
+      renderChart(); renderItems();
+      hide('loadingEl'); show('content'); updateDrLabel(); renderWidgets();
+    } else if (state.level === 'lp') {
+      const [lpRes, dRes] = await Promise.all([fetch(`/api/lp?${qs}`), fetch(`/api/lp_daily?${qs}`)]);
+      if (!lpRes.ok) { const e = await lpRes.json(); throw new Error(e.detail||'Error'); }
+      state.lpData = await lpRes.json(); state.dailyData = dRes.ok ? await dRes.json() : null; state.data = null; state.creativeData = null;
+      resetMs(); show('metricsGrid'); show('chartWrap');
+      const d = state.lpData; document.getElementById('periodLabel').textContent = `${fd(d.since)} → ${fd(d.until)}`;
+      renderMetrics(computeSummaryFromItems(state.lpData.items||[]), false);
+      renderChart(); renderLpTableHeader(); renderItems();
       hide('loadingEl'); show('content'); updateDrLabel(); renderWidgets();
     } else {
       qs.set('level', state.level);
@@ -729,42 +778,63 @@ const CHART_BAR_DEFS = {
   leads_schedule:{ label:'Appointments',color:'#e879f9', fmt:'num'   },
 };
 const CHART_LINE_DEFS = {
-  cpm:  { label:'CPM',       color:'#a78bfa', fmt:'money', calc:d=>d.impressions>0?d.spend/d.impressions*1000:null },
-  cpl:  { label:'CPL',       color:'#f472b6', fmt:'money', calc:d=>d.leads>0?d.spend/d.leads:null },
-  cpc:  { label:'CPC',       color:'#fb923c', fmt:'money', calc:d=>d.clicks>0?d.spend/d.clicks:null },
-  ctr:  { label:'CTR (%)',   color:'#34d399', fmt:'pct',   calc:d=>d.impressions>0?d.clicks/d.impressions*100:null },
-  appt: { label:'Cost/Appt', color:'#38bdf8', fmt:'money', calc:d=>(d.leads_schedule||0)>0?d.spend/d.leads_schedule:null },
+  cpm:          { label:'CPM',          fmt:'money', calc:d=>d.cpm??( d.impressions>0?d.spend/d.impressions*1000:null) },
+  cpl:          { label:'CPL',          fmt:'money', calc:d=>d.cpl??( d.leads>0?d.spend/d.leads:null) },
+  cpc:          { label:'CPC',          fmt:'money', calc:d=>d.cpc??( d.link_clicks>0?d.spend/d.link_clicks:null) },
+  ctr:          { label:'CTR (%)',      fmt:'pct',   calc:d=>d.ctr??( d.impressions>0?(d.link_clicks||d.clicks)/d.impressions*100:null) },
+  appt:         { label:'Cost/Appt',    fmt:'money', calc:d=>d.cost_per_schedule??((d.leads_schedule||0)>0?d.spend/d.leads_schedule:null) },
+  connect_rate: { label:'Connect Rate', fmt:'pct',   calc:d=>d.connect_rate??((d.link_clicks||0)>0?(d.landing_page_views||0)/d.link_clicks*100:null) },
+  conv_rate:    { label:'Conv. Rate',   fmt:'pct',   calc:d=>d.conv_rate??((d.landing_page_views||0)>0?d.leads/d.landing_page_views*100:null) },
 };
 const BAR_COLORS_2 = ['#6366f144','#f59e0b44'];
 const BAR_BORDERS_2= ['#6366f1','#f59e0b'];
 const LINE_COLORS_2= ['#a78bfa','#34d399'];
 function onChartSelChange(){renderChart();}
+let _lpDailyTimer=null;
+function scheduleLpDailyFetch(q){
+  clearTimeout(_lpDailyTimer);
+  _lpDailyTimer=setTimeout(async()=>{
+    const qs=buildQS();
+    if(q)qs.set('q',q);
+    try{const r=await fetch(`/api/lp_daily?${qs}`);if(r.ok){state.dailyData=await r.json();renderChart();}}catch(e){}
+  },350);
+}
 function renderChart() {
-  const days=state.dailyData?.days||[];
-  const labels=days.map(d=>{const[,mo,da]=d.date.split('-');return`${da}/${mo}`;});
   const b1k=document.getElementById('chartBar1')?.value||'spend';
   const b2k=document.getElementById('chartBar2')?.value||'none';
   const l1k=document.getElementById('chartLine1')?.value||'none';
   const l2k=document.getElementById('chartLine2')?.value||'none';
+  const titleEl=document.getElementById('chartTitle');
+  // ── Chart title ─────────────────────────────────────────────────────────────
+  if(state.level==='lp'){
+    const q=document.getElementById('searchInp').value.trim();
+    if(titleEl)titleEl.textContent=q?`Daily evolution — ${shortLp(q)||q}`:'Daily evolution — All Landing Pages';
+  } else {
+    if(titleEl)titleEl.textContent='Daily evolution';
+  }
+  const days=state.dailyData?.days||[];
+  const labels=days.map(d=>{const[,mo,da]=d.date.split('-');return`${da}/${mo}`;});
   const datasets=[];
   const barKeys=[b1k,b2k].filter(k=>k!=='none');
   barKeys.forEach((k,i)=>{
     const def=CHART_BAR_DEFS[k]||CHART_BAR_DEFS.spend;
-    datasets.push({label:def.label,data:days.map(d=>d[k]||0),backgroundColor:BAR_COLORS_2[i],borderColor:BAR_BORDERS_2[i],borderWidth:2,borderRadius:4,type:'bar',yAxisID:'yBar'});
+    const fmtFn=def.fmt==='money'?(v=>fmtR(v)):(v=>fmtN(v));
+    datasets.push({label:def.label,data:days.map(d=>d[k]||0),backgroundColor:BAR_COLORS_2[i],borderColor:BAR_BORDERS_2[i],borderWidth:2,borderRadius:4,type:'bar',yAxisID:'yBar',fmtFn});
   });
   const lineKeys=[l1k,l2k].filter(k=>k!=='none');
   lineKeys.forEach((k,i)=>{
     const def=CHART_LINE_DEFS[k];if(!def)return;
     const vals=days.map(d=>def.calc(d));
     if(!vals.some(v=>v!==null))return;
-    datasets.push({label:def.label,data:vals,borderColor:LINE_COLORS_2[i],backgroundColor:LINE_COLORS_2[i],borderWidth:2,pointRadius:3,pointBackgroundColor:LINE_COLORS_2[i],fill:false,type:'line',tension:.3,yAxisID:'yLine',spanGaps:true});
+    const fmtFn=def.fmt==='pct'?(v=>`${v.toFixed(1)}%`):(v=>fmtR(v));
+    datasets.push({label:def.label,data:vals,borderColor:LINE_COLORS_2[i],backgroundColor:LINE_COLORS_2[i],borderWidth:2,pointRadius:3,pointBackgroundColor:LINE_COLORS_2[i],fill:false,type:'line',tension:.3,yAxisID:'yLine',spanGaps:true,fmtFn});
   });
   const hasLines=datasets.some(d=>d.type==='line');
+  const barFmt=barKeys.length&&CHART_BAR_DEFS[barKeys[0]]?.fmt==='money'?(v=>fmtR(v)):(v=>fmtN(v));
   const lineDef1=CHART_LINE_DEFS[l1k]||CHART_LINE_DEFS[l2k];
   const lineFmt=lineDef1?.fmt==='pct'?(v=>`${v.toFixed(1)}%`):(v=>fmtR(v));
-  const barFmt=barKeys.length&&CHART_BAR_DEFS[barKeys[0]]?.fmt==='money'?(v=>fmtR(v)):(v=>fmtN(v));
   if(chart) chart.destroy();
-  chart=new Chart(document.getElementById('dailyChart'),{type:'bar',data:{labels,datasets},options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{display:datasets.length>1,labels:{color:'#888',font:{size:11},boxWidth:12,padding:16}},tooltip:{callbacks:{label:ctx=>{const d=ctx.dataset;return`${d.label}: ${d.yAxisID==='yBar'?barFmt(ctx.raw):lineFmt(ctx.raw)}`;}}}},scales:{x:{grid:{color:'#ffffff10'},ticks:{color:'#888',font:{size:11}}},yBar:{grid:{color:'#ffffff10'},ticks:{color:'#888',font:{size:11},callback:barFmt},position:'left'},yLine:hasLines?{grid:{drawOnChartArea:false},ticks:{color:LINE_COLORS_2[0],font:{size:11},callback:lineFmt},position:'right'}:{display:false}}}});
+  chart=new Chart(document.getElementById('dailyChart'),{type:'bar',data:{labels,datasets},options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{display:datasets.length>1,labels:{color:'#888',font:{size:11},boxWidth:12,padding:16}},tooltip:{callbacks:{label:ctx=>{const d=ctx.dataset;return`${d.label}: ${(d.fmtFn||((v)=>String(v)))(ctx.raw)}`;}}}},scales:{x:{grid:{color:'#ffffff10'},ticks:{color:'#888',font:{size:11}}},yBar:{grid:{color:'#ffffff10'},ticks:{color:'#888',font:{size:11},callback:barFmt},position:'left'},yLine:hasLines?{grid:{drawOnChartArea:false},ticks:{color:LINE_COLORS_2[0],font:{size:11},callback:lineFmt},position:'right'}:{display:false}}}});
 }
 
 function visCols() {
@@ -779,7 +849,7 @@ function sortCol(key) { if(state.sort.key===key){state.sort.dir=state.sort.dir==
 function renderTableHeader() {
   const cols=visCols();
   document.getElementById('colGroup').innerHTML=cols.map(c=>`<col data-key="${c.key}" style="width:${prefs.colWidths[c.key]||c.defaultW}px">`).join('');
-  document.getElementById('tableHead').innerHTML=cols.map((c,i)=>{const sortCls=state.sort.key===c.key?`sort-${state.sort.dir}`:'';return`<th data-idx="${i}" data-key="${c.key}" class="${sortCls}" draggable="true" onclick="sortCol('${c.key}')" oncontextmenu="_openColMenu(event,'${c.key}')" ondragstart="_colDragStart(event,'${c.key}')" ondragover="_colDragOver(event,'${c.key}')" ondragleave="_colDragLeave(event)" ondrop="_colDrop(event,'${c.key}')" ondragend="_colDragEnd(event)">${c.label}<span class="th-sort-icon"></span><div class="col-resize" data-idx="${i}" onclick="event.stopPropagation()" draggable="false"></div></th>`;}).join('');
+  document.getElementById('tableHead').innerHTML=cols.map((c,i)=>{const sortCls=state.sort.key===c.key?`sort-${state.sort.dir}`:'';return`<th title="${c.label}" data-idx="${i}" data-key="${c.key}" class="${sortCls}" draggable="true" onclick="sortCol('${c.key}')" oncontextmenu="_openColMenu(event,'${c.key}')" ondragstart="_colDragStart(event,'${c.key}')" ondragover="_colDragOver(event,'${c.key}')" ondragleave="_colDragLeave(event)" ondrop="_colDrop(event,'${c.key}')" ondragend="_colDragEnd(event)">${c.label}<span class="th-sort-icon"></span><div class="col-resize" data-idx="${i}" onclick="event.stopPropagation()" draggable="false"></div></th>`;}).join('');
   document.getElementById('dataTable').style.width=cols.reduce((s,c)=>s+(prefs.colWidths[c.key]||c.defaultW),0)+'px';
   attachResize();
 }
@@ -791,12 +861,13 @@ function attachResize() {
 }
 function onResize(e) {
   if(!_rs)return; const nw=Math.max(55,_rs.w0+e.clientX-_rs.x0);
-  if(_rs.cr){const el=document.querySelector(`#crColGroup col[data-key="${_rs.col.key}"]`);if(el)el.style.width=nw+'px';document.getElementById('crDataTable').style.width=visCrCols().reduce((s,c)=>{const e2=document.querySelector(`#crColGroup col[data-key="${c.key}"]`);return s+(e2?parseInt(e2.style.width):(prefs.crColWidths[c.key]||c.defaultW));},0)+'px';}
+  if(_rs.lp){const el=document.querySelector(`#lpColGroup col[data-key="${_rs.col.key}"]`);if(el)el.style.width=nw+'px';document.getElementById('lpDataTable').style.width=visLpCols().reduce((s,c)=>{const e2=document.querySelector(`#lpColGroup col[data-key="${c.key}"]`);return s+(e2?parseInt(e2.style.width):(prefs.lpColWidths[c.key]||c.defaultW));},0)+'px';}
+  else if(_rs.cr){const el=document.querySelector(`#crColGroup col[data-key="${_rs.col.key}"]`);if(el)el.style.width=nw+'px';document.getElementById('crDataTable').style.width=visCrCols().reduce((s,c)=>{const e2=document.querySelector(`#crColGroup col[data-key="${c.key}"]`);return s+(e2?parseInt(e2.style.width):(prefs.crColWidths[c.key]||c.defaultW));},0)+'px';}
   else{const el=document.querySelector(`#colGroup col[data-key="${_rs.col.key}"]`);if(el)el.style.width=nw+'px';document.getElementById('dataTable').style.width=visCols().reduce((s,c)=>{const e2=document.querySelector(`#colGroup col[data-key="${c.key}"]`);return s+(e2?parseInt(e2.style.width):(prefs.colWidths[c.key]||c.defaultW));},0)+'px';}
 }
 function offResize(e) {
   if(!_rs)return; const nw=Math.max(55,_rs.w0+e.clientX-_rs.x0);
-  if(_rs.cr)prefs.crColWidths[_rs.col.key]=nw; else prefs.colWidths[_rs.col.key]=nw;
+  if(_rs.lp)prefs.lpColWidths[_rs.col.key]=nw; else if(_rs.cr)prefs.crColWidths[_rs.col.key]=nw; else prefs.colWidths[_rs.col.key]=nw;
   savePrefs(prefs); _rs.h.classList.remove('active'); _rs=null; document.removeEventListener('mousemove',onResize); document.removeEventListener('mouseup',offResize);
 }
 
@@ -839,7 +910,7 @@ function sortCrItems(ads){const{key,dir}=state.crSort;return[...ads].sort((a,b)=
 function renderCrTableHeader(){
   const cols=visCrCols();
   document.getElementById('crColGroup').innerHTML=cols.map(c=>`<col data-key="${c.key}" style="width:${prefs.crColWidths[c.key]||c.defaultW}px">`).join('');
-  document.getElementById('crTableHead').innerHTML=cols.map((c,i)=>{const sc=state.crSort.key===c.key?`sort-${state.crSort.dir}`:'';return`<th data-idx="${i}" data-key="${c.key}" class="${sc}" draggable="true" onclick="sortCrCol('${c.key}')" oncontextmenu="_openCrColMenu(event,'${c.key}')" ondragstart="_crDragStart(event,'${c.key}')" ondragover="_crDragOver(event,'${c.key}')" ondragleave="_crDragLeave(event)" ondrop="_crDrop(event,'${c.key}')" ondragend="_crDragEnd(event)">${c.label}<span class="th-sort-icon"></span><div class="col-resize" onclick="event.stopPropagation()" draggable="false"></div></th>`;}).join('');
+  document.getElementById('crTableHead').innerHTML=cols.map((c,i)=>{const sc=state.crSort.key===c.key?`sort-${state.crSort.dir}`:'';return`<th title="${c.label}" data-idx="${i}" data-key="${c.key}" class="${sc}" draggable="true" onclick="sortCrCol('${c.key}')" oncontextmenu="_openCrColMenu(event,'${c.key}')" ondragstart="_crDragStart(event,'${c.key}')" ondragover="_crDragOver(event,'${c.key}')" ondragleave="_crDragLeave(event)" ondrop="_crDrop(event,'${c.key}')" ondragend="_crDragEnd(event)">${c.label}<span class="th-sort-icon"></span><div class="col-resize" onclick="event.stopPropagation()" draggable="false"></div></th>`;}).join('');
   document.getElementById('crDataTable').style.width=cols.reduce((s,c)=>s+(prefs.crColWidths[c.key]||c.defaultW),0)+'px';
   document.querySelectorAll('#crTableHead .col-resize').forEach(h=>{h.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();const th=h.closest('th'),col=visCrCols()[+th.dataset.idx];_rs={col,x0:e.clientX,w0:prefs.crColWidths[col.key]||col.defaultW,h,cr:true};h.classList.add('active');document.addEventListener('mousemove',onResize);document.addEventListener('mouseup',offResize);});});
 }
@@ -902,16 +973,29 @@ function resetMs(){msSelected=null;crStatusFilter='active';document.querySelecto
 function renderItems() {
   const q=document.getElementById('searchInp').value.toLowerCase();
   if(state.level==='creative'){
-    show('creativeView');hide('tableView');
+    show('creativeView');hide('tableView');hide('lpView');
     if(crViewMode==='table'){hide('creativeGrid');show('crTableWrap');renderCrTableHeader();renderCreativeTable(q);}
     else{show('creativeGrid');hide('crTableWrap');renderCreativeGrid(q);}
+    if(state.creativeData){
+      const filtered=filterByCrStatus(filterByMs(state.creativeData.ads||[]).filter(a=>!q||a.name.toLowerCase().includes(q)));
+      renderMetrics(computeSummaryFromItems(aggregateCreatives(filtered)),false);
+      renderChart();
+    }
+  } else if(state.level==='lp'){
+    show('lpView');hide('tableView');hide('creativeView');
+    renderLpTable(q);
+    if(state.lpData){
+      const filtered=(state.lpData.items||[]).filter(r=>!q||r.lp.toLowerCase().includes(q));
+      renderMetrics(computeSummaryFromItems(filtered),false);
+      scheduleLpDailyFetch(q);
+    }
   } else {
-    show('tableView');hide('creativeView');
+    show('tableView');hide('creativeView');hide('lpView');
     renderTable(q);
     if(state.data){if(msSelected!==null){const f=filterByMs(state.data?.items||[]).filter(r=>!q||r.name.toLowerCase().includes(q));renderMetrics(computeSummaryFromItems(f),false);}else if(!q){renderMetrics(null,true);}else{const f=(state.data?.items||[]).filter(r=>r.name.toLowerCase().includes(q));renderMetrics(computeSummaryFromItems(f),false);}}
   }
 }
-function nameCell(r){const risks=(r.risks||[]).map(t=>`<span class="risk-tag">⚠ ${t}</span>`).join('');return`<span class="name-text" title="${esc(r.name)}">${esc(r.name)}</span>${risks}`;}
+function nameCell(r){const risks=(r.risks||[]).map(t=>`<span class="risk-tag${t==='High Cost/Appt'?' appt':''}">⚠ ${t}</span>`).join('');return`<span class="name-text" title="${esc(r.name)}">${esc(r.name)}</span>${risks}`;}
 function statusCell(s){const info=crStatusInfo(s||'UNKNOWN');if(!s||s==='UNKNOWN')return'<span class="num muted">—</span>';return`<span class="cr-status-badge ${info.cls}" style="font-size:.7rem;padding:2px 7px">${info.label}</span>`;}
 function budgetCell(r){if(!r.budget)return'<span class="num muted">—</span>';return`<span class="num">${fmtR(r.budget)}<span class="muted" style="font-size:.7rem"> /${r.budget_type==='daily'?'d':'total'}</span></span>`;}
 function sortItems(items){const{key,dir}=state.sort;return[...items].sort((a,b)=>{const av=a[key]??-Infinity,bv=b[key]??-Infinity;if(typeof av==='string')return dir==='asc'?av.localeCompare(bv):bv.localeCompare(av);return dir==='asc'?av-bv:bv-av;});}
@@ -940,7 +1024,7 @@ function renderCreativeGrid(q=''){
     const lpBtn=a.lp?`<a href="${esc(a.lp)}" target="_blank" class="cr-link-btn" style="right:auto;left:8px">LP ↗</a>`:'';
     const isVideo=a.video_views>0||a.thruplays>0, hook=(isVideo&&a.impressions)?(a.video_views/a.impressions*100).toFixed(1):null;
     const st=crStatusInfo(a.effective_status), statusBadge=`<span class="cr-status-badge ${st.cls}">${st.label}</span>`;
-    const leadsBreakdown=(a.leads_form||a.leads_web||a.leads_schedule)?[a.leads_form?`<div class="cr-m"><span class="cr-m-label">Lead (Form)</span><span class="cr-m-value">${fmtN(a.leads_form)}</span></div>`:'',a.leads_web?`<div class="cr-m"><span class="cr-m-label">Lead (Web)</span><span class="cr-m-value">${fmtN(a.leads_web)}</span></div>`:'',a.leads_schedule?`<div class="cr-m"><span class="cr-m-label">Schedule</span><span class="cr-m-value">${fmtN(a.leads_schedule)}</span></div>`:''].join(''):`<div class="cr-m"><span class="cr-m-label">Leads</span><span class="cr-m-value">${fmtN(a.leads)}</span></div>`;
+    const leadsBreakdown=(a.leads_form||a.leads_web||a.leads_schedule)?[a.leads_form?`<div class="cr-m"><span class="cr-m-label">Lead (Form)</span><span class="cr-m-value">${fmtN(a.leads_form)}</span></div>`:'',a.leads_web?`<div class="cr-m"><span class="cr-m-label">Lead (Web)</span><span class="cr-m-value">${fmtN(a.leads_web)}</span></div>`:'',a.leads_schedule?`<div class="cr-m"><span class="cr-m-label">Appointments</span><span class="cr-m-value">${fmtN(a.leads_schedule)}</span></div>`:'',a.leads_schedule&&a.cost_per_schedule?`<div class="cr-m"><span class="cr-m-label">Cost/Appt</span><span class="cr-m-value">${fmtR(a.cost_per_schedule)}</span></div>`:''].join(''):`<div class="cr-m"><span class="cr-m-label">Leads</span><span class="cr-m-value">${fmtN(a.leads)}</span></div>`;
     return`<div class="cr-card${st.cls!=='active'?' cr-inactive':''}"><div class="cr-thumb">${thumb}${statusBadge}${lpBtn}${linkBtn}</div><div class="cr-body"><div class="cr-name" title="${esc(a.name)}">${esc(a.name)}</div><div class="cr-metrics"><div class="cr-m"><span class="cr-m-label">Investment</span><span class="cr-m-value">${fmtR(a.spend)}</span></div>${leadsBreakdown}<div class="cr-m"><span class="cr-m-label">CPL</span><span class="cr-m-value">${fmtR(a.cpl)}</span></div><div class="cr-m"><span class="cr-m-label">CTR</span><span class="cr-m-value">${a.ctr?.toFixed(2)}%</span></div>${a.video_views?`<div class="cr-m"><span class="cr-m-label">Views 3s</span><span class="cr-m-value">${fmtN(a.video_views)}</span></div>`:''}${hook?`<div class="cr-m"><span class="cr-m-label">Hook Rate</span><span class="cr-m-value">${hook}%</span></div>`:''}</div></div></div>`;
   }).join('');
 }
@@ -989,6 +1073,43 @@ function renderCreativeTable(q=''){
   tbody.innerHTML=ads.map(a=>`<tr>${cols.map(c=>`<td>${c.render(a)}</td>`).join('')}</tr>`).join('')+totRow;
 }
 
+// ── Landing Pages table ───────────────────────────────────────────────────────
+function visLpCols(){const visible=LP_COLS.filter(c=>c.always||!prefs.hiddenLpCols.includes(c.key));if(!prefs.lpColOrder||!prefs.lpColOrder.length)return visible;const keySet=new Set(visible.map(c=>c.key));const ordered=prefs.lpColOrder.filter(k=>keySet.has(k)).map(k=>LP_COLS.find(c=>c.key===k));const extra=visible.filter(c=>!prefs.lpColOrder.includes(c.key));return[...ordered,...extra];}
+function sortLpCol(key){if(state.lpSort.key===key){state.lpSort.dir=state.lpSort.dir==='desc'?'asc':'desc';}else{state.lpSort={key,dir:key==='lp'?'asc':'desc'};}renderLpTableHeader();renderItems();}
+function sortLpItems(items){const{key,dir}=state.lpSort;return[...items].sort((a,b)=>{const av=a[key]??-Infinity,bv=b[key]??-Infinity;if(typeof av==='string')return dir==='asc'?av.localeCompare(bv):bv.localeCompare(av);return dir==='asc'?av-bv:bv-av;});}
+function renderLpTableHeader(){
+  const cols=visLpCols();
+  document.getElementById('lpColGroup').innerHTML=cols.map(c=>`<col data-key="${c.key}" style="width:${prefs.lpColWidths[c.key]||c.defaultW}px">`).join('');
+  document.getElementById('lpTableHead').innerHTML=cols.map((c,i)=>{const sc=state.lpSort.key===c.key?`sort-${state.lpSort.dir}`:'';return`<th title="${c.label}" data-idx="${i}" data-key="${c.key}" class="${sc}" draggable="true" onclick="sortLpCol('${c.key}')" oncontextmenu="_openLpColMenu(event,'${c.key}')" ondragstart="_lpDragStart(event,'${c.key}')" ondragover="_lpDragOver(event,'${c.key}')" ondragleave="_lpDragLeave(event)" ondrop="_lpDrop(event,'${c.key}')" ondragend="_lpDragEnd(event)">${c.label}<span class="th-sort-icon"></span><div class="col-resize" onclick="event.stopPropagation()" draggable="false"></div></th>`;}).join('');
+  document.getElementById('lpDataTable').style.width=cols.reduce((s,c)=>s+(prefs.lpColWidths[c.key]||c.defaultW),0)+'px';
+  document.querySelectorAll('#lpTableHead .col-resize').forEach(h=>{h.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();const th=h.closest('th'),col=visLpCols()[+th.dataset.idx];_rs={col,x0:e.clientX,w0:prefs.lpColWidths[col.key]||col.defaultW,h,lp:true};h.classList.add('active');document.addEventListener('mousemove',onResize);document.addEventListener('mouseup',offResize);});});
+}
+let _lpDragKey=null;
+function _lpDragStart(e,key){_lpDragKey=key;e.dataTransfer.effectAllowed='move';setTimeout(()=>{const th=document.querySelector(`#lpTableHead th[data-key="${key}"]`);if(th)th.classList.add('col-dragging');},0);}
+function _lpDragOver(e,key){if(!_lpDragKey||_lpDragKey===key)return;e.preventDefault();e.dataTransfer.dropEffect='move';document.querySelectorAll('#lpTableHead th.col-drag-over').forEach(t=>t.classList.remove('col-drag-over'));e.currentTarget.classList.add('col-drag-over');}
+function _lpDragLeave(e){e.currentTarget.classList.remove('col-drag-over');}
+function _lpDrop(e,key){e.preventDefault();if(!_lpDragKey||_lpDragKey===key)return;e.currentTarget.classList.remove('col-drag-over');const order=visLpCols().map(c=>c.key);const from=order.indexOf(_lpDragKey),to=order.indexOf(key);if(from===-1||to===-1)return;order.splice(from,1);order.splice(to,0,_lpDragKey);const hiddenKeys=LP_COLS.map(c=>c.key).filter(k=>!order.includes(k));prefs.lpColOrder=[...order,...hiddenKeys];savePrefs(prefs);renderLpTableHeader();renderItems();_lpDragKey=null;}
+function _lpDragEnd(e){document.querySelectorAll('#lpTableHead th.col-dragging,#lpTableHead th.col-drag-over').forEach(t=>{t.classList.remove('col-dragging');t.classList.remove('col-drag-over');});_lpDragKey=null;}
+function _openLpColMenu(e,colKey){e.preventDefault();e.stopPropagation();const hidden=LP_COLS.filter(c=>!c.always&&prefs.hiddenLpCols.includes(c.key));const thisCol=LP_COLS.find(c=>c.key===colKey);let html='';if(thisCol&&!thisCol.always)html+=`<div class="cm-item cm-hide" onclick="toggleLpCol('${colKey}',false);_closeColMenu()">✕ Hide "${thisCol.label}"</div>`;if(hidden.length){if(html)html+='<div class="cm-sep"></div>';html+=hidden.map(c=>`<div class="cm-item cm-show" onclick="toggleLpCol('${c.key}',true);_closeColMenu()">＋ Show "${c.label}"</div>`).join('');}if(!html)return;_colMenu.innerHTML=html;_colMenu.style.display='block';const mx=Math.min(e.clientX,window.innerWidth-_colMenu.offsetWidth-8),my=Math.min(e.clientY,window.innerHeight-_colMenu.offsetHeight-8);_colMenu.style.left=mx+'px';_colMenu.style.top=my+'px';}
+function toggleLpCol(key,visible){prefs.hiddenLpCols=visible?prefs.hiddenLpCols.filter(k=>k!==key):[...new Set([...prefs.hiddenLpCols,key])];savePrefs(prefs);renderLpTableHeader();renderItems();}
+function renderLpTable(q=''){
+  const items=sortLpItems((state.lpData?.items||[]).filter(r=>!q||r.lp.toLowerCase().includes(q)));
+  const cols=visLpCols(), tbody=document.getElementById('lpTableBody');
+  if(!items.length){tbody.innerHTML=`<tr><td colspan="${cols.length}" class="empty">No data</td></tr>`;return;}
+  const SUM=['spend','impressions','clicks','link_clicks','landing_page_views','leads','leads_form','leads_web','leads_schedule','ad_count'];
+  const tot={};SUM.forEach(k=>{tot[k]=items.reduce((s,r)=>s+(r[k]||0),0);});
+  tot.ctr=tot.impressions?tot.link_clicks/tot.impressions*100:0;
+  tot.cpm=tot.impressions?tot.spend/tot.impressions*1000:0;
+  tot.cpc=tot.link_clicks?tot.spend/tot.link_clicks:null;
+  tot.cpl=tot.leads?tot.spend/tot.leads:null;
+  tot.connect_rate=tot.link_clicks?tot.landing_page_views/tot.link_clicks*100:0;
+  tot.conv_rate=tot.landing_page_views?tot.leads/tot.landing_page_views*100:0;
+  tot.cost_per_schedule=tot.leads_schedule?tot.spend/tot.leads_schedule:null;
+  tot.lp='TOTAL';
+  const totRow=`<tr class="total-row">${cols.map((c,i)=>i===0?`<td>TOTAL</td>`:`<td>${c.render(tot)}</td>`).join('')}</tr>`;
+  tbody.innerHTML=items.map(r=>`<tr>${cols.map(c=>`<td>${c.render(r)}</td>`).join('')}</tr>`).join('')+totRow;
+}
+// ─────────────────────────────────────────────────────────────────────────────
 function openSettings(){buildSettingsToggles();document.getElementById('settingsOverlay').classList.add('open');}
 function closeSettings(){document.getElementById('settingsOverlay').classList.remove('open');}
 function maybeCloseSettings(e){if(e.target===document.getElementById('settingsOverlay'))closeSettings();}
@@ -1035,7 +1156,7 @@ function drNavMonth(which,dir){if(which==='start')_drSV=drAdvMonth(_drSV,dir);el
 function renderDrCals(){renderDrCal(_drSV,'drStartMonth','drStartDays');renderDrCal(_drEV,'drEndMonth','drEndDays');}
 function renderDrCal(view,monthId,daysId){const{year,month}=view;document.getElementById(monthId).textContent=`${MONTHS_PT_CAPS[month-1]} ${year}`;const today=todayStr(),firstDay=new Date(year,month-1,1).getDay(),numDays=new Date(year,month,0).getDate();let html='';for(let i=0;i<firstDay;i++)html+='<div class="dr-day dr-empty"></div>';for(let d=1;d<=numDays;d++){const ds=`${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`,since=_drSince,until=_drUntil||_drSince,[lo,hi]=since<=until?[since,until]:[until,since];let cls='dr-day';if(ds===today)cls+=' dr-today';if(ds===lo&&ds===hi)cls+=' dr-sel-start dr-sel-end';else if(ds===lo)cls+=' dr-sel-start';else if(ds===hi)cls+=' dr-sel-end';else if(ds>lo&&ds<hi)cls+=' dr-in-range';html+=`<button class="${cls}" onclick="drPickDay('${ds}')">${d}</button>`;}document.getElementById(daysId).innerHTML=html;}
 function drPickDay(ds){if(_drStep===0){_drSince=ds;_drUntil=null;_drStep=1;}else{_drUntil=ds;_drStep=0;}renderDrCals();}
-document.addEventListener('click',e=>{const wrap=document.getElementById('drWrap');if(wrap&&!wrap.contains(e.target))closeDatePicker();});
+document.addEventListener('click',e=>{const wrap=document.getElementById('drWrap');if(wrap&&!e.composedPath().includes(wrap))closeDatePicker();});
 
 let dashPages=[],activeDashPageId=null;
 function loadDashPages(){try{dashPages=JSON.parse(localStorage.getItem(PAGES_KEY))||[];}catch{dashPages=[];}if(!dashPages.length){const id='dp_'+Date.now();dashPages=[{id,title:'Overview',preset:state.preset,since:null,until:null,level:'campaign',accountId:null,widgets:[]}];saveDashPages();}activeDashPageId=dashPages[0].id;}
