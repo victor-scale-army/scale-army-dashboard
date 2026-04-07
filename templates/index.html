@@ -435,7 +435,7 @@
         </div>
       </div>
       <div class="creative-grid" id="creativeGrid" style="display:flex;flex-wrap:wrap;gap:14px;"></div>
-      <div id="crTableWrap" style="display:none; overflow-x:auto;">
+      <div id="crTableWrap" style="display:none; overflow-x:auto; overflow-y:auto; max-height:70vh;">
         <table class="data-table" id="crDataTable">
           <colgroup id="crColGroup"></colgroup>
           <thead><tr id="crTableHead"></tr></thead>
@@ -563,7 +563,7 @@
 <script>
 const ACCOUNTS = {{ accounts_json | safe }};
 const CONFIGURED = {{ 'true' if configured else 'false' }};
-const PREF_KEY = 'scale_army_dash_v2';
+const PREF_KEY = 'scale_army_dash_v3';
 const PAGES_KEY = 'scale_army_pages_v1';
 
 const COLS = [
@@ -612,21 +612,22 @@ const BASE_METRICS = [
 ];
 const CR_COLS = [
   { key:'name',              label:'Name',          always:true,  defaultW:200, render: a=>`<span class="name-text" title="${esc(a.name)}">${esc(a.name)}</span>` },
-  { key:'campaign_name',     label:'Campaign',      always:false, defaultW:150, render: a=>`<span style="font-size:.78rem;color:var(--muted)">${esc(a.campaign_name||'—')}</span>` },
   { key:'status',            label:'Status',        always:false, defaultW:95,  render: a=>statusCell(a.effective_status) },
   { key:'spend',             label:'Investment',    always:false, defaultW:120, render: a=>numR(a.spend) },
+  { key:'leads_schedule',    label:'Appointments',  always:false, defaultW:105, render: a=>numN(a.leads_schedule) },
+  { key:'cost_per_schedule', label:'Cost/Appt.',    always:false, defaultW:95,  render: a=>numR(a.cost_per_schedule) },
   { key:'leads',             label:'Leads',         always:false, defaultW:70,  render: a=>numN(a.leads) },
   { key:'leads_web',         label:'Website Leads', always:false, defaultW:105, render: a=>numN(a.leads_web) },
   { key:'leads_form',        label:'Meta Leads',    always:false, defaultW:90,  render: a=>numN(a.leads_form) },
   { key:'cpl',               label:'CPL',           always:false, defaultW:95,  render: a=>numR(a.cpl) },
-  { key:'leads_schedule',    label:'Appointments',  always:false, defaultW:105, render: a=>numN(a.leads_schedule) },
-  { key:'cost_per_schedule', label:'Cost/Appt.',    always:false, defaultW:95,  render: a=>numR(a.cost_per_schedule) },
-  { key:'ctr',               label:'CTR',           always:false, defaultW:80,  render: a=>numPct(a.ctr) },
-  { key:'cpm',               label:'CPM',           always:false, defaultW:95,  render: a=>numR(a.cpm) },
-  { key:'cpc',               label:'CPC',           always:false, defaultW:95,  render: a=>numR(a.cpc) },
   { key:'link_clicks',       label:'Link Clicks',   always:false, defaultW:95,  render: a=>numN(a.link_clicks) },
   { key:'landing_page_views',label:'LP Views',      always:false, defaultW:85,  render: a=>numN(a.landing_page_views) },
   { key:'connect_rate',      label:'Connect Rate',  always:false, defaultW:105, render: a=>numPct(a.connect_rate) },
+  { key:'conv_rate',         label:'Conv. Rate',    always:false, defaultW:95,  render: a=>numPct(a.landing_page_views?a.leads/a.landing_page_views*100:null) },
+  { key:'cpm',               label:'CPM',           always:false, defaultW:95,  render: a=>numR(a.cpm) },
+  { key:'ctr',               label:'CTR (link)',    always:false, defaultW:85,  render: a=>numPct(a.ctr) },
+  { key:'cpc',               label:'CPC (link)',    always:false, defaultW:95,  render: a=>numR(a.cpc) },
+  { key:'campaign_name',     label:'Campaign',      always:false, defaultW:150, render: a=>`<span style="font-size:.78rem;color:var(--muted)">${esc(a.campaign_name||'—')}</span>` },
   { key:'video_views',       label:'Views 3s',      always:false, defaultW:85,  render: a=>numN(a.video_views) },
   { key:'hook_rate',         label:'Hook Rate',     always:false, defaultW:85,  render: a=>a.hook_rate?numPct(a.hook_rate):'<span class="num muted">—</span>' },
   { key:'thruplays',         label:'ThruPlay',      always:false, defaultW:85,  render: a=>numN(a.thruplays) },
