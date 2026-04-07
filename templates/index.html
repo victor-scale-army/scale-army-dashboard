@@ -99,6 +99,7 @@
     .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; overflow-x:auto; }
     .data-table { border-collapse:collapse; table-layout:fixed; }
     .data-table th { position:relative; text-align:center; font-size:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; padding:8px 20px 6px 12px; border-bottom:1px solid var(--border); white-space:normal; word-break:break-word; line-height:1.25; overflow:hidden; text-overflow:ellipsis; vertical-align:bottom; user-select:none; cursor:pointer; min-width:0; }
+    #crTableHead th { position:sticky; top:0; z-index:5; background:var(--surface); }
     .data-table th:first-child { text-align:left; }
     .data-table th:hover { color:var(--text); }
     .th-sort-icon { margin-left:4px; font-size:.65rem; color:var(--muted); }
@@ -630,6 +631,7 @@ const CR_COLS = [
   { key:'hook_rate',         label:'Hook Rate',     always:false, defaultW:85,  render: a=>a.hook_rate?numPct(a.hook_rate):'<span class="num muted">—</span>' },
   { key:'thruplays',         label:'ThruPlay',      always:false, defaultW:85,  render: a=>numN(a.thruplays) },
   { key:'impressions',       label:'Impressions',   always:false, defaultW:105, render: a=>numN(a.impressions) },
+  { key:'ad_link',           label:'Ad Link',       always:false, defaultW:80,  render: a=>a.link?`<a href="${esc(a.link)}" target="_blank" style="font-size:.8rem;color:var(--accent);text-decoration:none;" title="${esc(a.link)}">Ver ↗</a>`:'<span class="num muted">—</span>' },
 ];
 function shortLp(u){if(!u||u==='No LP')return u||'No LP';try{const x=new URL(u);return x.hostname+(x.pathname&&x.pathname!=='/'?x.pathname:'');}catch{return u;}}
 const LP_COLS = [
