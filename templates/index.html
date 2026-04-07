@@ -579,6 +579,7 @@ const COLS = [
   { key:'link_clicks',        label:'Link Clicks',          always:false, defaultW:95,  render: r => numN(r.link_clicks) },
   { key:'landing_page_views', label:'LP Views',             always:false, defaultW:85,  render: r => numN(r.landing_page_views) },
   { key:'connect_rate',       label:'Connect Rate',         always:false, defaultW:105, render: r => numPct(r.connect_rate) },
+  { key:'conv_rate',          label:'Conv. Rate',           always:false, defaultW:95,  render: r => numPct(r.landing_page_views ? r.leads/r.landing_page_views*100 : null) },
   { key:'cpm',                label:'CPM',                  always:false, defaultW:95,  render: r => numR(r.cpm) },
   { key:'ctr',                label:'CTR (link)',           always:false, defaultW:85,  render: r => numPct(r.ctr) },
   { key:'cpc',                label:'CPC (link)',           always:false, defaultW:95,  render: r => numR(r.cpc) },
