@@ -996,7 +996,7 @@ function renderItems() {
   }
 }
 function nameCell(r){const risks=(r.risks||[]).map(t=>`<span class="risk-tag${t==='High Cost/Appt'?' appt':''}">⚠ ${t}</span>`).join('');return`<span class="name-text" title="${esc(r.name)}">${esc(r.name)}</span>${risks}`;}
-function statusCell(s){const info=crStatusInfo(s||'UNKNOWN');if(!s||s==='UNKNOWN')return'<span class="num muted">—</span>';return`<span class="cr-status-badge ${info.cls}" style="font-size:.7rem;padding:2px 7px">${info.label}</span>`;}
+function statusCell(s){const info=crStatusInfo(s||'UNKNOWN');if(!s||s==='UNKNOWN')return'<span class="num muted">—</span>';return`<span class="cr-status-badge ${info.cls}" style="font-size:.7rem;padding:2px 7px;position:static">${info.label}</span>`;}
 function budgetCell(r){if(!r.budget)return'<span class="num muted">—</span>';return`<span class="num">${fmtR(r.budget)}<span class="muted" style="font-size:.7rem"> /${r.budget_type==='daily'?'d':'total'}</span></span>`;}
 function sortItems(items){const{key,dir}=state.sort;return[...items].sort((a,b)=>{const av=a[key]??-Infinity,bv=b[key]??-Infinity;if(typeof av==='string')return dir==='asc'?av.localeCompare(bv):bv.localeCompare(av);return dir==='asc'?av-bv:bv-av;});}
 function renderTable(q=''){
