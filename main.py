@@ -139,7 +139,6 @@ def _row_metrics(row: dict) -> dict:
     leads_form  = _extract_action(acts, _LEAD_FORM_TYPES)
     leads_web   = _extract_action(acts, _LEAD_WEB_TYPES)
     leads_sched  = _extract_action(acts, _cv_sched_types + ("schedule",))
-    pixel_custom = _extract_action(acts, ("offsite_conversion.fb_pixel_custom",))
     leads        = leads_form + leads_web
     purch = _extract_action(acts, _PURCHASE_TYPES)
     video_views = _extract_action(vpa, ("video_view",))
@@ -148,7 +147,6 @@ def _row_metrics(row: dict) -> dict:
         "spend": spend, "impressions": imp, "clicks": clk, "reach": reach,
         "link_clicks": link_clicks, "landing_page_views": landing_page_views,
         "leads": leads, "leads_form": leads_form, "leads_web": leads_web, "leads_schedule": leads_sched,
-        "pixel_custom": pixel_custom,
         "purchases": purch, "video_views": video_views, "thruplays": thruplays,
         "ctr":  link_clicks / imp * 100 if imp else 0,
         "cpm":  spend / imp * 1000 if imp else 0,
@@ -337,21 +335,14 @@ async def api_metrics(
 
     hidden        = get_hidden_campaigns()
     hidden_lower  = {h.lower() for h in hidden}
-    sched_exclude = get_sched_exclude()
     merged, prev_merged, campaign_data = {}, {}, {}
 
     def _accumulate(target: dict, name: str, m: dict):
         if name in target:
-            for k in ("spend","impressions","clicks","reach","link_clicks","landing_page_views","leads","leads_form","leads_web","leads_schedule","pixel_custom","purchases","video_views","thruplays"):
+            for k in ("spend","impressions","clicks","reach","link_clicks","landing_page_views","leads","leads_form","leads_web","leads_schedule","purchases","video_views","thruplays"):
                 target[name][k] += m[k]
         else:
             target[name] = {**m, "name": name}
-
-    def _apply_sched_max(rows: dict):
-        for name, row in rows.items():
-            excl_key = row.get("campaign_name", name) if level == "adset" else name
-            if excl_key not in sched_exclude:
-                row["leads_schedule"] = max(row["leads_schedule"], row.get("pixel_custom", 0))
 
     for acc in accounts:
         for row in await _get_insights(acc, token, d_since, d_until, level):
@@ -374,9 +365,6 @@ async def api_metrics(
         if level in ("campaign", "adset"):
             cdata = await _fetch_campaign_data(acc, token, level)
             campaign_data.update(cdata)
-
-    _apply_sched_max(merged)
-    _apply_sched_max(prev_merged)
 
     summary_curr = _merge_totals(list(merged.values()))
     summary_prev = _merge_totals(list(prev_merged.values()))
@@ -439,8 +427,7 @@ async def api_daily(
     )
     accounts = ([account_id] if account_id and account_id in accounts_list else accounts_list)
 
-    hidden_lower      = {h.lower() for h in get_hidden_campaigns()}
-    sched_excl_lower  = {s.lower() for s in get_sched_exclude()}
+    hidden_lower = {h.lower() for h in get_hidden_campaigns()}
 
     by_date: dict = {}
     for acc in accounts:
@@ -460,9 +447,6 @@ async def api_daily(
                                 "link_clicks": 0, "landing_page_views": 0, "leads": 0, "leads_schedule": 0}
             acts = row.get("actions", [])
             ls = _extract_action(acts, _cv_sched_types + ("schedule",))
-            pc = _extract_action(acts, ("offsite_conversion.fb_pixel_custom",))
-            if camp not in sched_excl_lower:
-                ls = max(ls, pc)
             by_date[day]["spend"]               += float(row.get("spend", 0))
             by_date[day]["impressions"]         += int(row.get("impressions", 0))
             by_date[day]["clicks"]              += int(row.get("clicks", 0))
@@ -519,8 +503,6 @@ async def api_creatives(
         print(f"[creatives] acc={acc} total_rows={before} after_filter={len(rows)} hidden={hidden_c_lower}")
         ad_ids = [r.get("ad_id", "") for r in rows if r.get("ad_id")]
         creatives = await _fetch_ad_creatives_by_ids(ad_ids, token)
-        sched_exclude = get_sched_exclude()
-        sched_exclude_lower = {s.lower() for s in sched_exclude}
         for row in rows:
             ad_id = row.get("ad_id", "")
             m = _row_metrics(row)
@@ -528,10 +510,7 @@ async def api_creatives(
             sp = m["spend"]; ld = m["leads"]; im = m["impressions"]
             lc = m["link_clicks"]; lpv = m["landing_page_views"]
             vv = m["video_views"]
-            camp_name = (row.get("campaign_name") or "").strip().lower()
             ls = m["leads_schedule"]
-            if camp_name not in sched_exclude_lower:
-                ls = max(ls, m.get("pixel_custom", 0))
             all_ads.append({
                 "id": ad_id,
                 "name": row.get("ad_name", ""),
@@ -580,8 +559,6 @@ async def api_lp(
     lp_map: dict = {}
     hidden_c = get_hidden_campaigns()
     hidden_c_lower = {h.lower() for h in hidden_c}
-    sched_exclude = get_sched_exclude()
-    sched_exclude_lower = {s.lower() for s in sched_exclude}
 
     for acc in accounts:
         rows = await _meta_get_all(acc, token, {
@@ -602,10 +579,7 @@ async def api_lp(
             cinfo = creatives.get(ad_id, {})
             lp = cinfo.get("lp") or "No LP"
 
-            camp_name = (row.get("campaign_name") or "").strip().lower()
             ls = m["leads_schedule"]
-            if camp_name not in sched_exclude_lower:
-                ls = max(ls, m.get("pixel_custom", 0))
 
             if lp not in lp_map:
                 lp_map[lp] = {"lp": lp, "spend": 0.0, "impressions": 0, "clicks": 0,
@@ -656,7 +630,6 @@ async def api_lp_daily(
     )
     accounts = ([account_id] if account_id and account_id in accounts_list else accounts_list)
     hidden_c_lower = {h.lower() for h in get_hidden_campaigns()}
-    sched_exclude_lower = {s.lower() for s in get_sched_exclude()}
     q_lower = q.strip().lower()
 
     by_date: dict = {}
@@ -687,10 +660,7 @@ async def api_lp_daily(
                 by_date[day] = {"date": day, "spend": 0.0, "impressions": 0, "clicks": 0,
                                 "link_clicks": 0, "landing_page_views": 0, "leads": 0, "leads_schedule": 0}
             m = _row_metrics(row)
-            camp_name = (row.get("campaign_name") or "").strip().lower()
             ls = m["leads_schedule"]
-            if camp_name not in sched_exclude_lower:
-                ls = max(ls, m.get("pixel_custom", 0))
             d = by_date[day]
             d["spend"]              += m["spend"]
             d["impressions"]        += m["impressions"]
