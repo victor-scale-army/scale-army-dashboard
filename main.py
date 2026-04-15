@@ -83,6 +83,9 @@ def _compute_period(preset: str, since: str, until: str):
         first_this = today.replace(day=1)
         u = first_this - timedelta(days=1); s = u.replace(day=1)
         pu2 = s - timedelta(days=1); ps2 = pu2.replace(day=1)
+    elif p == "all_time":
+        s = _date(2000, 1, 1); u = today
+        ps2 = _date(1999, 1, 1); pu2 = _date(1999, 12, 31)
     else:
         s, u = today - timedelta(days=6), today
         ps2, pu2 = today - timedelta(days=13), today - timedelta(days=7)
@@ -847,10 +850,54 @@ async def api_debug_conversions():
 
 
 @app.get("/api/hubspot/funnel")
-async def api_hubspot_funnel():
+async def api_hubspot_funnel(preset: str = "last_30d", since: str = None, until: str = None):
     cache_path = os.path.join(os.path.dirname(__file__), "hubspot_cache.json")
     if not os.path.exists(cache_path):
         raise HTTPException(status_code=503, detail="HubSpot cache not found. Run build_hs_cache.py first.")
     with open(cache_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    return JSONResponse(data)
+        cache = json.load(f)
+
+    d_since, d_until, _, _ = _compute_period(
+        preset if not (since and until) else None, since, until
+    )
+
+    # clamp to available cache range
+    cache_min = cache.get("date_min", "2000-01-01")
+    cache_max = cache.get("date_max", "2099-12-31")
+    d_since = max(d_since, cache_min)
+    d_until = min(d_until, cache_max)
+
+    records = [r for r in cache["deals"] if d_since <= r["date"] <= d_until]
+
+    summary: dict = {"booked": 0, "held": 0, "no_show": 0, "scheduled": 0}
+    by_camp: dict = {}
+    by_cont: dict = {}
+
+    for r in records:
+        cl = r["classification"]
+        summary["booked"] += 1
+        summary[cl] += 1
+        for key, store in [(r["utm_campaign"], by_camp), (r["utm_content"], by_cont)]:
+            if key not in store:
+                store[key] = {"label": key, "booked": 0, "held": 0, "no_show": 0, "scheduled": 0}
+            store[key]["booked"] += 1
+            store[key][cl] += 1
+
+    def _with_rate(store):
+        out = []
+        for item in store.values():
+            b = item["booked"]
+            item["show_rate"] = round(item["held"] / b * 100, 1) if b else None
+            out.append(item)
+        return sorted(out, key=lambda x: -x["booked"])
+
+    b = summary["booked"]
+    summary["show_rate"] = round(summary["held"] / b * 100, 1) if b else None
+
+    return JSONResponse({
+        "since": d_since, "until": d_until,
+        "summary": summary,
+        "by_campaign": _with_rate(by_camp),
+        "by_content":  _with_rate(by_cont),
+        "cache_generated_at": cache.get("generated_at", ""),
+    })

@@ -1,480 +1,301 @@
 {
-  "since": "2026-01-01",
-  "until": "2026-04-15",
-  "summary": {
-    "booked": 661,
-    "held": 362,
-    "no_show": 10,
-    "scheduled": 289,
-    "show_rate": 54.8
-  },
-  "by_campaign": [
+  "deals": [
     {
-      "label": "(no utm_campaign)",
-      "booked": 337,
-      "held": 172,
-      "no_show": 6,
-      "scheduled": 159,
-      "show_rate": 51.0
+      "date": "2024-10-24",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "OM - #05 - Copy"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [67]",
-      "booked": 48,
-      "held": 25,
-      "no_show": 0,
-      "scheduled": 23,
-      "show_rate": 52.1
+      "date": "2026-03-06",
+      "classification": "held",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [76] [MARKETING-TEAMS]",
+      "utm_content": "(no utm_content)"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [79]",
-      "booked": 45,
-      "held": 18,
-      "no_show": 1,
-      "scheduled": 26,
-      "show_rate": 40.0
+      "date": "2026-03-29",
+      "classification": "held",
+      "utm_campaign": "[MARKETING] [INSTANT FORMS] [76] [MARKETING-TEAMS]",
+      "utm_content": "(no utm_content)"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [62]",
-      "booked": 37,
-      "held": 26,
-      "no_show": 0,
-      "scheduled": 11,
-      "show_rate": 70.3
+      "date": "2026-04-01",
+      "classification": "scheduled",
+      "utm_campaign": "(no utm_campaign)",
+      "utm_content": "(no utm_content)"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [57]",
-      "booked": 34,
-      "held": 22,
-      "no_show": 0,
-      "scheduled": 12,
-      "show_rate": 64.7
+      "date": "2026-04-01",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "OM - #05 - Copy"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [11]",
-      "booked": 25,
-      "held": 16,
-      "no_show": 0,
-      "scheduled": 9,
-      "show_rate": 64.0
+      "date": "2026-04-02",
+      "classification": "scheduled",
+      "utm_campaign": "(no utm_campaign)",
+      "utm_content": "(no utm_content)"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [64]",
-      "booked": 23,
-      "held": 17,
-      "no_show": 0,
-      "scheduled": 6,
-      "show_rate": 73.9
+      "date": "2026-04-02",
+      "classification": "held",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "OM - #05 - Copy"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [68] [MARKETING-TEAMS]",
-      "booked": 14,
-      "held": 11,
-      "no_show": 0,
-      "scheduled": 3,
-      "show_rate": 78.6
+      "date": "2026-04-02",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [INSTANT FORMS] [76] [MARKETING-TEAMS]",
+      "utm_content": "(no utm_content)"
     },
     {
-      "label": "76_Leads_Instant_Form_Lead_Event_Marketing_Teams",
-      "booked": 13,
-      "held": 2,
-      "no_show": 1,
-      "scheduled": 10,
-      "show_rate": 15.4
+      "date": "2026-04-02",
+      "classification": "held",
+      "utm_campaign": "[MARKETING] [INSTANT FORMS] [76] [MARKETING-TEAMS]",
+      "utm_content": "(no utm_content)"
     },
     {
-      "label": "[MARKETING] [INSTANT FORMS] [76] [MARKETING-TEAMS]",
-      "booked": 13,
-      "held": 10,
-      "no_show": 0,
-      "scheduled": 3,
-      "show_rate": 76.9
+      "date": "2026-04-02",
+      "classification": "scheduled",
+      "utm_campaign": "(no utm_campaign)",
+      "utm_content": "(no utm_content)"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [66] [NEW TEST]",
-      "booked": 13,
-      "held": 10,
-      "no_show": 0,
-      "scheduled": 3,
-      "show_rate": 76.9
+      "date": "2026-04-02",
+      "classification": "held",
+      "utm_campaign": "(no utm_campaign)",
+      "utm_content": "link_in_bio"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [76] [MARKETING-TEAMS]",
-      "booked": 7,
-      "held": 4,
-      "no_show": 1,
-      "scheduled": 2,
-      "show_rate": 57.1
+      "date": "2026-04-03",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "Jerrica - #02 - https://scalearmy.com/hire-form-smm/"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [61]",
-      "booked": 7,
-      "held": 5,
-      "no_show": 0,
-      "scheduled": 2,
-      "show_rate": 71.4
+      "date": "2026-04-04",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "OM - #05 - Copy"
     },
     {
-      "label": "81_Leads_Landing_Page_Schedule_Event_Marketing_Teams",
-      "booked": 6,
-      "held": 1,
-      "no_show": 1,
-      "scheduled": 4,
-      "show_rate": 16.7
+      "date": "2026-04-04",
+      "classification": "scheduled",
+      "utm_campaign": "76_Leads_Instant_Form_Lead_Event_Marketing_Teams",
+      "utm_content": "(no utm_content)"
     },
     {
-      "label": "[MARKETING] [LEADS] [80]",
-      "booked": 4,
-      "held": 2,
-      "no_show": 0,
-      "scheduled": 2,
-      "show_rate": 50.0
+      "date": "2026-04-04",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "Jerrica - #02 - scalearmy.com/social-media-manager"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [71] [MARKETING-TEAMS]",
-      "booked": 4,
-      "held": 3,
-      "no_show": 0,
-      "scheduled": 1,
-      "show_rate": 75.0
+      "date": "2026-04-04",
+      "classification": "no_show",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "OM - #05 - Copy"
     },
     {
-      "label": "120240227787380177",
-      "booked": 4,
-      "held": 2,
-      "no_show": 0,
-      "scheduled": 2,
-      "show_rate": 50.0
+      "date": "2026-04-04",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "Jerrica - #02 - https://scalearmy.com/hire-form-smm/"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [69] [SHORT GHL LP]",
-      "booked": 4,
-      "held": 1,
-      "no_show": 0,
-      "scheduled": 3,
-      "show_rate": 25.0
+      "date": "2026-04-05",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "Jerrica - #02 - https://scalearmy.com/hire-form-smm/"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [08]",
-      "booked": 4,
-      "held": 2,
-      "no_show": 0,
-      "scheduled": 2,
-      "show_rate": 50.0
+      "date": "2026-04-06",
+      "classification": "scheduled",
+      "utm_campaign": "(no utm_campaign)",
+      "utm_content": "(no utm_content)"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [75] [MARKETING-TEAMS]",
-      "booked": 3,
-      "held": 2,
-      "no_show": 0,
-      "scheduled": 1,
-      "show_rate": 66.7
+      "date": "2026-04-06",
+      "classification": "held",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "Generic Nate - #01"
     },
     {
-      "label": "[GENERAL][LAL][SCHEDULE][01]",
-      "booked": 3,
-      "held": 2,
-      "no_show": 0,
-      "scheduled": 1,
-      "show_rate": 66.7
+      "date": "2026-04-07",
+      "classification": "held",
+      "utm_campaign": "76_Leads_Instant_Form_Lead_Event_Marketing_Teams",
+      "utm_content": "(no utm_content)"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [65]",
-      "booked": 3,
-      "held": 3,
-      "no_show": 0,
-      "scheduled": 0,
-      "show_rate": 100.0
+      "date": "2026-04-07",
+      "classification": "held",
+      "utm_campaign": "(no utm_campaign)",
+      "utm_content": "(no utm_content)"
     },
     {
-      "label": "82_Leads_Landing_Page_Schedule_Event_AI_Automation_Specialist",
-      "booked": 2,
-      "held": 1,
-      "no_show": 0,
-      "scheduled": 1,
-      "show_rate": 50.0
+      "date": "2026-04-08",
+      "classification": "scheduled",
+      "utm_campaign": "76_Leads_Instant_Form_Lead_Event_Marketing_Teams",
+      "utm_content": "(no utm_content)"
     },
     {
-      "label": "[MARKETING] [INSTANT FORM] [01]",
-      "booked": 2,
-      "held": 2,
-      "no_show": 0,
-      "scheduled": 0,
-      "show_rate": 100.0
+      "date": "2026-04-08",
+      "classification": "held",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "OM - #05 - Copy"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [73] [MARKETING-TEAMS]",
-      "booked": 1,
-      "held": 0,
-      "no_show": 0,
-      "scheduled": 1,
-      "show_rate": 0.0
+      "date": "2026-04-08",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "Jerrica - #02 - https://scalearmy.com/hire-form-smm/"
     },
     {
-      "label": "[MARKETING] [SCHEDULES] [74] [MARKETING-TEAMS]",
-      "booked": 1,
-      "held": 0,
-      "no_show": 0,
-      "scheduled": 1,
-      "show_rate": 0.0
+      "date": "2026-04-09",
+      "classification": "no_show",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [76] [MARKETING-TEAMS]",
+      "utm_content": "[GENERIC 2 - JANUARY 26]"
     },
     {
-      "label": "headline",
-      "booked": 1,
-      "held": 0,
-      "no_show": 0,
-      "scheduled": 1,
-      "show_rate": 0.0
+      "date": "2026-04-09",
+      "classification": "scheduled",
+      "utm_campaign": "81_Leads_Landing_Page_Schedule_Event_Marketing_Teams",
+      "utm_content": "AD01_IMG_Wasting_money_Ops_managers"
     },
     {
-      "label": "google_23273288139",
-      "booked": 1,
-      "held": 1,
-      "no_show": 0,
-      "scheduled": 0,
-      "show_rate": 100.0
+      "date": "2026-04-09",
+      "classification": "held",
+      "utm_campaign": "(no utm_campaign)",
+      "utm_content": "(no utm_content)"
     },
     {
-      "label": "[SALES] [MARKETING] [SCHEDULES] [RETARGETING] [55]",
-      "booked": 1,
-      "held": 1,
-      "no_show": 0,
-      "scheduled": 0,
-      "show_rate": 100.0
+      "date": "2026-04-09",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "OM - #05 - Copy"
     },
     {
-      "label": "[GENERAL][LAL][SCHEDULE][33]",
-      "booked": 1,
-      "held": 1,
-      "no_show": 0,
-      "scheduled": 0,
-      "show_rate": 100.0
+      "date": "2026-04-10",
+      "classification": "scheduled",
+      "utm_campaign": "(no utm_campaign)",
+      "utm_content": "(no utm_content)"
+    },
+    {
+      "date": "2026-04-10",
+      "classification": "held",
+      "utm_campaign": "(no utm_campaign)",
+      "utm_content": "(no utm_content)"
+    },
+    {
+      "date": "2026-04-10",
+      "classification": "held",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "Generic Nate - #01"
+    },
+    {
+      "date": "2026-04-10",
+      "classification": "scheduled",
+      "utm_campaign": "(no utm_campaign)",
+      "utm_content": "(no utm_content)"
+    },
+    {
+      "date": "2026-04-11",
+      "classification": "no_show",
+      "utm_campaign": "81_Leads_Landing_Page_Schedule_Event_Marketing_Teams",
+      "utm_content": "AD01_IMG_Wasting_money_Ops_managers"
+    },
+    {
+      "date": "2026-04-11",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "Generic Nate - #01"
+    },
+    {
+      "date": "2026-04-12",
+      "classification": "scheduled",
+      "utm_campaign": "76_Leads_Instant_Form_Lead_Event_Marketing_Teams",
+      "utm_content": "(no utm_content)"
+    },
+    {
+      "date": "2026-04-12",
+      "classification": "held",
+      "utm_campaign": "81_Leads_Landing_Page_Schedule_Event_Marketing_Teams",
+      "utm_content": "AD01_IMG_Wasting_money_Ops_managers — Cópia"
+    },
+    {
+      "date": "2026-04-12",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "OM - #05 - Copy"
+    },
+    {
+      "date": "2026-04-13",
+      "classification": "scheduled",
+      "utm_campaign": "(no utm_campaign)",
+      "utm_content": "(no utm_content)"
+    },
+    {
+      "date": "2026-04-13",
+      "classification": "held",
+      "utm_campaign": "76_Leads_Instant_Form_Lead_Event_Marketing_Teams",
+      "utm_content": "AD02_VID_Jerrica_80k_year_SMM"
+    },
+    {
+      "date": "2026-04-13",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "OM - #05 - Copy"
+    },
+    {
+      "date": "2026-04-13",
+      "classification": "scheduled",
+      "utm_campaign": "81_Leads_Landing_Page_Schedule_Event_Marketing_Teams",
+      "utm_content": "AD01_IMG_Wasting_money_Ops_managers — Cópia"
+    },
+    {
+      "date": "2026-04-13",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "OM - #05 - Copy"
+    },
+    {
+      "date": "2026-04-14",
+      "classification": "scheduled",
+      "utm_campaign": "81_Leads_Landing_Page_Schedule_Event_Marketing_Teams",
+      "utm_content": "AD01_IMG_Wasting_money_Ops_managers — Cópia"
+    },
+    {
+      "date": "2026-04-14",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "OM - #05 - Copy"
+    },
+    {
+      "date": "2026-04-14",
+      "classification": "held",
+      "utm_campaign": "82_Leads_Landing_Page_Schedule_Event_AI_Automation_Specialist",
+      "utm_content": "AD133_VID_Friend_of_my_told_me"
+    },
+    {
+      "date": "2026-04-15",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "Generic Nate - #01"
+    },
+    {
+      "date": "2026-04-15",
+      "classification": "scheduled",
+      "utm_campaign": "82_Leads_Landing_Page_Schedule_Event_AI_Automation_Specialist",
+      "utm_content": "AD135_VID_Founder_friend_told_me"
+    },
+    {
+      "date": "2026-04-15",
+      "classification": "scheduled",
+      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",
+      "utm_content": "Generic Nate - #01"
     }
   ],
-  "by_content": [
-    {
-      "label": "(no utm_content)",
-      "booked": 356,
-      "held": 180,
-      "no_show": 7,
-      "scheduled": 169,
-      "show_rate": 50.6
-    },
-    {
-      "label": "[JERRICA] [SOCIAL MEDIA] [01]",
-      "booked": 98,
-      "held": 67,
-      "no_show": 0,
-      "scheduled": 31,
-      "show_rate": 68.4
-    },
-    {
-      "label": "[JERRICA] [SOCIAL MEDIA] [02]",
-      "booked": 48,
-      "held": 28,
-      "no_show": 0,
-      "scheduled": 20,
-      "show_rate": 58.3
-    },
-    {
-      "label": "OM - #05 - Copy",
-      "booked": 26,
-      "held": 12,
-      "no_show": 1,
-      "scheduled": 13,
-      "show_rate": 46.2
-    },
-    {
-      "label": "[CMM-V2] [Content Marketing Manager] [01]",
-      "booked": 24,
-      "held": 15,
-      "no_show": 0,
-      "scheduled": 9,
-      "show_rate": 62.5
-    },
-    {
-      "label": "[AI] [SOCIAL MEDIA] [03]",
-      "booked": 20,
-      "held": 11,
-      "no_show": 0,
-      "scheduled": 9,
-      "show_rate": 55.0
-    },
-    {
-      "label": "link_in_bio",
-      "booked": 12,
-      "held": 11,
-      "no_show": 0,
-      "scheduled": 1,
-      "show_rate": 91.7
-    },
-    {
-      "label": "Jerrica - #02 - scalearmy.com/social-media-manager",
-      "booked": 10,
-      "held": 5,
-      "no_show": 0,
-      "scheduled": 5,
-      "show_rate": 50.0
-    },
-    {
-      "label": "[V3] [PAID MEDIA BUYER] [03]",
-      "booked": 10,
-      "held": 7,
-      "no_show": 0,
-      "scheduled": 3,
-      "show_rate": 70.0
-    },
-    {
-      "label": "Jerrica - #02 - https://scalearmy.com/hire-form-smm/",
-      "booked": 8,
-      "held": 2,
-      "no_show": 0,
-      "scheduled": 6,
-      "show_rate": 25.0
-    },
-    {
-      "label": "[MARKETING MANAGER] [CHAOS] [01]",
-      "booked": 7,
-      "held": 5,
-      "no_show": 0,
-      "scheduled": 2,
-      "show_rate": 71.4
-    },
-    {
-      "label": "Generic Nate - #01",
-      "booked": 5,
-      "held": 1,
-      "no_show": 0,
-      "scheduled": 4,
-      "show_rate": 20.0
-    },
-    {
-      "label": "AD01_IMG_Wasting_money_Ops_managers \u2014 C\u00f3pia",
-      "booked": 4,
-      "held": 1,
-      "no_show": 0,
-      "scheduled": 3,
-      "show_rate": 25.0
-    },
-    {
-      "label": "120240227787410177",
-      "booked": 4,
-      "held": 2,
-      "no_show": 0,
-      "scheduled": 2,
-      "show_rate": 50.0
-    },
-    {
-      "label": "AD02_VID_Jerrica_80k_year_SMM",
-      "booked": 3,
-      "held": 0,
-      "no_show": 0,
-      "scheduled": 3,
-      "show_rate": 0.0
-    },
-    {
-      "label": "[GENERIC 2 - JANUARY 26]",
-      "booked": 3,
-      "held": 0,
-      "no_show": 1,
-      "scheduled": 2,
-      "show_rate": 0.0
-    },
-    {
-      "label": "Jerrica Social Media - #02",
-      "booked": 3,
-      "held": 2,
-      "no_show": 0,
-      "scheduled": 1,
-      "show_rate": 66.7
-    },
-    {
-      "label": "AI Social Media - #03",
-      "booked": 3,
-      "held": 2,
-      "no_show": 0,
-      "scheduled": 1,
-      "show_rate": 66.7
-    },
-    {
-      "label": "[V2] [PAID MEDIA BUYER] [02]",
-      "booked": 3,
-      "held": 3,
-      "no_show": 0,
-      "scheduled": 0,
-      "show_rate": 100.0
-    },
-    {
-      "label": "[OFFSHORE][SOCIALMEDIA][BLACKNOTE][04]",
-      "booked": 3,
-      "held": 2,
-      "no_show": 0,
-      "scheduled": 1,
-      "show_rate": 66.7
-    },
-    {
-      "label": "[JERRICA] [PLAIN] [FRIEND] [01]",
-      "booked": 3,
-      "held": 3,
-      "no_show": 0,
-      "scheduled": 0,
-      "show_rate": 100.0
-    },
-    {
-      "label": "AD01_IMG_Wasting_money_Ops_managers",
-      "booked": 2,
-      "held": 0,
-      "no_show": 1,
-      "scheduled": 1,
-      "show_rate": 0.0
-    },
-    {
-      "label": "AD135_VID_Founder_friend_told_me",
-      "booked": 1,
-      "held": 0,
-      "no_show": 0,
-      "scheduled": 1,
-      "show_rate": 0.0
-    },
-    {
-      "label": "AD133_VID_Friend_of_my_told_me",
-      "booked": 1,
-      "held": 1,
-      "no_show": 0,
-      "scheduled": 0,
-      "show_rate": 100.0
-    },
-    {
-      "label": "AI Social Media Manager - #01",
-      "booked": 1,
-      "held": 0,
-      "no_show": 0,
-      "scheduled": 1,
-      "show_rate": 0.0
-    },
-    {
-      "label": "Content Marketing Manager - #02",
-      "booked": 1,
-      "held": 1,
-      "no_show": 0,
-      "scheduled": 0,
-      "show_rate": 100.0
-    },
-    {
-      "label": "AI Content Marketing Manager - #03",
-      "booked": 1,
-      "held": 0,
-      "no_show": 0,
-      "scheduled": 1,
-      "show_rate": 0.0
-    },
-    {
-      "label": "ad_784640909659",
-      "booked": 1,
-      "held": 1,
-      "no_show": 0,
-      "scheduled": 0,
-      "show_rate": 100.0
-    }
-  ],
-  "generated_at": "2026-04-15T19:30:24.429034Z"
+  "date_min": "2024-10-24",
+  "date_max": "2026-04-15",
+  "generated_at": "2026-04-15T20:58:35.511449Z"
 }

@@ -462,14 +462,8 @@
           <div class="section-row" style="margin-bottom:10px;"><span class="section-title">By Campaign</span></div>
           <div class="table-wrap" style="overflow-x:auto;">
             <table class="data-table" id="hsCampTable">
-              <thead><tr>
-                <th style="text-align:left;min-width:220px;">utm_campaign <span class="th-sort-icon"></span></th>
-                <th>Booked <span class="th-sort-icon"></span></th>
-                <th>Held <span class="th-sort-icon"></span></th>
-                <th>No Show <span class="th-sort-icon"></span></th>
-                <th>Scheduled <span class="th-sort-icon"></span></th>
-                <th>Show Rate <span class="th-sort-icon"></span></th>
-              </tr></thead>
+              <colgroup id="hsCampColGroup"></colgroup>
+              <thead id="hsCampHead"></thead>
               <tbody id="hsCampBody"></tbody>
             </table>
           </div>
@@ -478,14 +472,8 @@
           <div class="section-row" style="margin-bottom:10px;"><span class="section-title">By Creative (utm_content)</span></div>
           <div class="table-wrap" style="overflow-x:auto;">
             <table class="data-table" id="hsContTable">
-              <thead><tr>
-                <th style="text-align:left;min-width:220px;">utm_content <span class="th-sort-icon"></span></th>
-                <th>Booked <span class="th-sort-icon"></span></th>
-                <th>Held <span class="th-sort-icon"></span></th>
-                <th>No Show <span class="th-sort-icon"></span></th>
-                <th>Scheduled <span class="th-sort-icon"></span></th>
-                <th>Show Rate <span class="th-sort-icon"></span></th>
-              </tr></thead>
+              <colgroup id="hsContColGroup"></colgroup>
+              <thead id="hsContHead"></thead>
               <tbody id="hsContBody"></tbody>
             </table>
           </div>
@@ -691,12 +679,59 @@ const LP_COLS = [
   { key:'conv_rate',       label:'Conv. Rate',    always:false, defaultW:100, render:a=>numPct(a.conv_rate) },
   { key:'impressions',     label:'Impressions',   always:false, defaultW:105, render:a=>numN(a.impressions) },
 ];
-const DEFAULT_PREFS = { hiddenCols:['reach','video_views','thruplays','impressions'], hiddenMetrics:['reach','impressions','video_views','thruplays'], metricOrder:[], customMetrics:[], colWidths:{}, colOrder:[], hiddenCrCols:['campaign_name','impressions','thruplays','link_clicks','landing_page_views','connect_rate'], crColOrder:[], crColWidths:{}, hiddenLpCols:['link_clicks','impressions','connect_rate'], lpColOrder:[], lpColWidths:{} };
+const DEFAULT_PREFS = { hiddenCols:['reach','video_views','thruplays','impressions'], hiddenMetrics:['reach','impressions','video_views','thruplays'], metricOrder:[], customMetrics:[], colWidths:{}, colOrder:[], hiddenCrCols:['campaign_name','impressions','thruplays','link_clicks','landing_page_views','connect_rate'], crColOrder:[], crColWidths:{}, hiddenLpCols:['link_clicks','impressions','connect_rate'], lpColOrder:[], lpColWidths:{}, hsColWidths:{}, hsColOrder:[] };
+const HS_COLS = [
+  {key:'label',     label:'',          defaultW:220},
+  {key:'booked',    label:'Booked',    defaultW:80},
+  {key:'held',      label:'Held',      defaultW:70},
+  {key:'no_show',   label:'No Show',   defaultW:90},
+  {key:'scheduled', label:'Upcoming',  defaultW:100},
+  {key:'show_rate', label:'Show Rate', defaultW:95},
+];
+function visHsCols() {
+  const order = (prefs.hsColOrder||[]).length ? prefs.hsColOrder : HS_COLS.map(c=>c.key);
+  return order.map(k=>HS_COLS.find(c=>c.key===k)).filter(Boolean);
+}
+let _hsDragKey = null;
+function _hsDragStart(e,key){_hsDragKey=key;e.dataTransfer.effectAllowed='move';setTimeout(()=>{const th=e.target.closest('th');if(th)th.classList.add('col-dragging');},0);}
+function _hsDragOver(e,key){if(_hsDragKey&&_hsDragKey!==key){e.preventDefault();e.dataTransfer.dropEffect='move';e.currentTarget.classList.add('col-drag-over');}}
+function _hsDragLeave(e){e.currentTarget.classList.remove('col-drag-over');}
+function _hsDrop(e,key){e.preventDefault();e.currentTarget.classList.remove('col-drag-over');if(!_hsDragKey||_hsDragKey===key)return;const keys=visHsCols().map(c=>c.key);const fi=keys.indexOf(_hsDragKey),ti=keys.indexOf(key);if(fi<0||ti<0)return;keys.splice(fi,1);keys.splice(ti,0,_hsDragKey);prefs.hsColOrder=keys;savePrefs(prefs);renderHubspot();}
+function _hsDragEnd(e){_hsDragKey=null;document.querySelectorAll('.col-dragging,.col-drag-over').forEach(el=>el.classList.remove('col-dragging','col-drag-over'));}
+function hsColSortIcon(colKey, sortState) {
+  if(sortState.key!==colKey)return'<span class="th-sort-icon"></span>';
+  return`<span class="th-sort-icon">${sortState.dir==='asc'?'↑':'↓'}</span>`;
+}
+function renderHsTableHeader(prefix, labelText, sortState) {
+  const cols=visHsCols();
+  const cg=document.getElementById(prefix+'ColGroup');
+  const head=document.getElementById(prefix+'Head');
+  const tbl=document.getElementById(prefix+'Table');
+  if(!cg||!head||!tbl)return;
+  cg.innerHTML=cols.map(c=>`<col data-key="${c.key}" style="width:${prefs.hsColWidths[c.key]||c.defaultW}px">`).join('');
+  tbl.style.width=cols.reduce((s,c)=>s+(prefs.hsColWidths[c.key]||c.defaultW),0)+'px';
+  const sortKey=prefix+'Sort';
+  head.innerHTML=`<tr>${cols.map((c,i)=>{const sortCls=sortState.key===c.key?`sort-${sortState.dir}`:'';return`<th data-idx="${i}" data-key="${c.key}" class="${sortCls}" draggable="true" onclick="hsSort('${prefix}','${c.key}')" ondragstart="_hsDragStart(event,'${c.key}')" ondragover="_hsDragOver(event,'${c.key}')" ondragleave="_hsDragLeave(event)" ondrop="_hsDrop(event,'${c.key}')" ondragend="_hsDragEnd(event)" style="${c.key==='label'?'text-align:left;cursor:pointer':'cursor:pointer'}">${c.key==='label'?labelText:c.label}${hsColSortIcon(c.key,sortState)}<div class="col-resize" onclick="event.stopPropagation()"></div></th>`;}).join('')}</tr>`;
+  head.querySelectorAll('.col-resize').forEach(h=>{h.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();const th=h.closest('th');const col=HS_COLS.find(c=>c.key===th.dataset.key);if(!col)return;_rs={col,x0:e.clientX,w0:prefs.hsColWidths[col.key]||col.defaultW,h,hs:prefix};h.classList.add('active');document.addEventListener('mousemove',onResize);document.addEventListener('mouseup',offResize);});});
+}
+function hsSort(prefix, key) {
+  const s = prefix==='hsCamp' ? state.hsCampSort : state.hsContSort;
+  if(s.key===key){s.dir=s.dir==='desc'?'asc':'desc';}else{s.key=key;s.dir=key==='label'?'asc':'desc';}
+  renderHubspot();
+}
+function sortHsItems(items, sortState) {
+  const {key,dir}=sortState;
+  return [...items].sort((a,b)=>{
+    const av=a[key]??-Infinity, bv=b[key]??-Infinity;
+    if(typeof av==='string')return dir==='asc'?av.localeCompare(bv):bv.localeCompare(av);
+    return dir==='asc'?av-bv:bv-av;
+  });
+}
 function loadPrefs() { try { return { ...DEFAULT_PREFS, ...JSON.parse(localStorage.getItem(PREF_KEY)||'{}') }; } catch { return { ...DEFAULT_PREFS }; } }
 function savePrefs(p) { localStorage.setItem(PREF_KEY, JSON.stringify(p)); }
 let prefs = loadPrefs();
 
-let state = { preset:'last_7d', since:null, until:null, accountId:null, level:'campaign', data:null, dailyData:null, creativeData:null, lpData:null, sort:{ key:'spend', dir:'desc' }, crSort:{ key:'spend', dir:'desc' }, lpSort:{ key:'spend', dir:'desc' } };
+let state = { preset:'last_7d', since:null, until:null, accountId:null, level:'campaign', data:null, dailyData:null, creativeData:null, lpData:null, sort:{ key:'spend', dir:'desc' }, crSort:{ key:'spend', dir:'desc' }, lpSort:{ key:'spend', dir:'desc' }, hsCampSort:{key:'booked',dir:'desc'}, hsContSort:{key:'booked',dir:'desc'}, hsExcludeNoUtm:true };
 let chart = null;
 
 function allMetricDefs() { return [...BASE_METRICS, ...prefs.customMetrics.map(cm => ({ key:cm.id, label:cm.name, custom:true, fmt: v => fmtCustom(v,cm.format), invert: cm.invert===true||cm.invert==='true' }))]; }
@@ -739,6 +774,7 @@ async function load() {
       hide('metricsGrid'); hide('chartWrap');
       document.getElementById('periodLabel').textContent = `${fd(state.hsData.since)} → ${fd(state.hsData.until)}`;
       renderHubspot();
+      show('hubspotView'); hide('tableView'); hide('creativeView'); hide('lpView');
       hide('loadingEl'); show('content'); updateDrLabel();
     } else if (state.level === 'creative') {
       const [crRes, dRes] = await Promise.all([fetch(`/api/creatives?${qs}`), fetch(`/api/daily?${qs}`)]);
@@ -913,13 +949,14 @@ function attachResize() {
 }
 function onResize(e) {
   if(!_rs)return; const nw=Math.max(55,_rs.w0+e.clientX-_rs.x0);
-  if(_rs.lp){const el=document.querySelector(`#lpColGroup col[data-key="${_rs.col.key}"]`);if(el)el.style.width=nw+'px';document.getElementById('lpDataTable').style.width=visLpCols().reduce((s,c)=>{const e2=document.querySelector(`#lpColGroup col[data-key="${c.key}"]`);return s+(e2?parseInt(e2.style.width):(prefs.lpColWidths[c.key]||c.defaultW));},0)+'px';}
+  if(_rs.hs){const cg=document.getElementById(_rs.hs+'ColGroup');const el=cg?cg.querySelector(`col[data-key="${_rs.col.key}"]`):null;if(el)el.style.width=nw+'px';const tbl=document.getElementById(_rs.hs+'Table');if(tbl)tbl.style.width=HS_COLS.reduce((s,c)=>{const e2=cg?cg.querySelector(`col[data-key="${c.key}"]`):null;return s+(e2?parseInt(e2.style.width):(prefs.hsColWidths[c.key]||c.defaultW));},0)+'px';}
+  else if(_rs.lp){const el=document.querySelector(`#lpColGroup col[data-key="${_rs.col.key}"]`);if(el)el.style.width=nw+'px';document.getElementById('lpDataTable').style.width=visLpCols().reduce((s,c)=>{const e2=document.querySelector(`#lpColGroup col[data-key="${c.key}"]`);return s+(e2?parseInt(e2.style.width):(prefs.lpColWidths[c.key]||c.defaultW));},0)+'px';}
   else if(_rs.cr){const el=document.querySelector(`#crColGroup col[data-key="${_rs.col.key}"]`);if(el)el.style.width=nw+'px';document.getElementById('crDataTable').style.width=visCrCols().reduce((s,c)=>{const e2=document.querySelector(`#crColGroup col[data-key="${c.key}"]`);return s+(e2?parseInt(e2.style.width):(prefs.crColWidths[c.key]||c.defaultW));},0)+'px';}
   else{const el=document.querySelector(`#colGroup col[data-key="${_rs.col.key}"]`);if(el)el.style.width=nw+'px';document.getElementById('dataTable').style.width=visCols().reduce((s,c)=>{const e2=document.querySelector(`#colGroup col[data-key="${c.key}"]`);return s+(e2?parseInt(e2.style.width):(prefs.colWidths[c.key]||c.defaultW));},0)+'px';}
 }
 function offResize(e) {
   if(!_rs)return; const nw=Math.max(55,_rs.w0+e.clientX-_rs.x0);
-  if(_rs.lp)prefs.lpColWidths[_rs.col.key]=nw; else if(_rs.cr)prefs.crColWidths[_rs.col.key]=nw; else prefs.colWidths[_rs.col.key]=nw;
+  if(_rs.hs)prefs.hsColWidths[_rs.col.key]=nw; else if(_rs.lp)prefs.lpColWidths[_rs.col.key]=nw; else if(_rs.cr)prefs.crColWidths[_rs.col.key]=nw; else prefs.colWidths[_rs.col.key]=nw;
   savePrefs(prefs); _rs.h.classList.remove('active'); _rs=null; document.removeEventListener('mousemove',onResize); document.removeEventListener('mouseup',offResize);
 }
 
@@ -1049,32 +1086,63 @@ function renderItems() {
     if(state.data){if(msSelected!==null){const f=filterByMs(state.data?.items||[]).filter(r=>!q||r.name.toLowerCase().includes(q));renderMetrics(computeSummaryFromItems(f),false);}else if(!q){renderMetrics(null,true);}else{const f=(state.data?.items||[]).filter(r=>r.name.toLowerCase().includes(q));renderMetrics(computeSummaryFromItems(f),false);}}
   }
 }
+
 function renderHubspot() {
   const d = state.hsData; if(!d) return;
-  const s = d.summary;
+
+  // Apply UTM filter
+  const excl = state.hsExcludeNoUtm;
+  let byCamp = (d.by_campaign||[]).filter(r => !excl || r.label !== '(no utm_campaign)');
+  let byCont = (d.by_content||[]).filter(r  => !excl || r.label !== '(no utm_content)');
+
+  // Recalculate summary from filtered campaign rows
+  const fSum = byCamp.reduce((acc, r) => {
+    acc.booked    += r.booked;
+    acc.held      += r.held;
+    acc.no_show   += r.no_show;
+    acc.scheduled += r.scheduled;
+    return acc;
+  }, {booked:0, held:0, no_show:0, scheduled:0});
+  fSum.show_rate = fSum.booked ? Math.round(fSum.held / fSum.booked * 1000) / 10 : null;
+
+  // Sort
+  byCamp = sortHsItems(byCamp, state.hsCampSort);
+  byCont = sortHsItems(byCont, state.hsContSort);
+
+  // Summary cards
+  const hiddenCount = (d.by_campaign||[]).find(r=>r.label==='(no utm_campaign)')?.booked || 0;
+  const toggleLabel = excl
+    ? `<span style="color:var(--muted);font-size:.75rem;cursor:pointer;" onclick="state.hsExcludeNoUtm=false;renderHubspot()">+ Show ${hiddenCount} without UTM</span>`
+    : `<span style="color:var(--muted);font-size:.75rem;cursor:pointer;" onclick="state.hsExcludeNoUtm=true;renderHubspot()">Hide non-UTM</span>`;
+
   const cards = [
-    {label:'Booked',       value: s.booked,    fmt: v=>v},
-    {label:'Held',         value: s.held,       fmt: v=>v},
-    {label:'No Show',      value: s.no_show,    fmt: v=>v},
-    {label:'Scheduled',    value: s.scheduled,  fmt: v=>v},
-    {label:'Show Rate',    value: s.show_rate,  fmt: v=>v!=null?v+'%':'—'},
+    {label:'Booked',    value: fSum.booked,    fmt: v=>v},
+    {label:'Held',      value: fSum.held,      fmt: v=>v},
+    {label:'No Show',   value: fSum.no_show,   fmt: v=>v},
+    {label:'Upcoming',  value: fSum.scheduled, fmt: v=>v},
+    {label:'Show Rate', value: fSum.show_rate, fmt: v=>v!=null?v+'%':'—'},
   ];
   document.getElementById('hsFunnelCards').innerHTML = cards.map(c=>`
     <div class="m-card" style="cursor:default;min-width:110px;flex:1;">
       <div class="m-label">${c.label}</div>
       <div class="m-value">${c.fmt(c.value)}</div>
-    </div>`).join('');
+    </div>`).join('') + `<div style="display:flex;align-items:center;padding:0 4px;">${toggleLabel}</div>`;
 
-  const hsRow = (item, labelKey) => {
-    const sr = item.show_rate != null ? item.show_rate+'%' : '—';
-    return `<tr>
-      <td style="text-align:left;word-break:break-word;white-space:normal;max-width:300px;" title="${esc(item.label)}">${esc(item.label)}</td>
-      <td>${item.booked}</td><td>${item.held}</td><td>${item.no_show}</td><td>${item.scheduled}</td>
-      <td><span style="font-weight:600;color:${item.show_rate>=50?'var(--green)':'var(--red)'}">${sr}</span></td>
-    </tr>`;
+  const hsRow = item => {
+    const cols = visHsCols();
+    return `<tr>${cols.map(c=>{
+      if(c.key==='label') return `<td style="text-align:left;word-break:break-word;white-space:normal;max-width:300px;" title="${esc(item.label)}">${esc(item.label)}</td>`;
+      if(c.key==='show_rate'){const sr=item.show_rate!=null?item.show_rate+'%':'—';return`<td><span style="font-weight:600;color:${item.show_rate>=50?'var(--green)':'var(--red)'}">${sr}</span></td>`;}
+      return `<td>${item[c.key]??0}</td>`;
+    }).join('')}</tr>`;
   };
-  document.getElementById('hsCampBody').innerHTML = (d.by_campaign||[]).map(r=>hsRow(r,'campaign')).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No data</td></tr>';
-  document.getElementById('hsContBody').innerHTML = (d.by_content||[]).map(r=>hsRow(r,'content')).join('')   || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No data</td></tr>';
+
+  renderHsTableHeader('hsCamp', 'utm_campaign', state.hsCampSort);
+  renderHsTableHeader('hsCont', 'utm_content',  state.hsContSort);
+
+  const ncols = visHsCols().length;
+  document.getElementById('hsCampBody').innerHTML = byCamp.map(r=>hsRow(r)).join('') || `<tr><td colspan="${ncols}" style="text-align:center;color:var(--muted);padding:20px;">No data</td></tr>`;
+  document.getElementById('hsContBody').innerHTML = byCont.map(r=>hsRow(r)).join('')  || `<tr><td colspan="${ncols}" style="text-align:center;color:var(--muted);padding:20px;">No data</td></tr>`;
 }
 
 function nameCell(r){const risks=(r.risks||[]).map(t=>`<span class="risk-tag${t==='High Cost/Appt'?' appt':''}">⚠ ${t}</span>`).join('');return`<span class="name-text" title="${esc(r.name)}">${esc(r.name)}</span>${risks}`;}
