@@ -13,7 +13,14 @@ from fastapi.templating import Jinja2Templates
 load_dotenv()
 
 BASE_DIR = Path(__file__).parent
-META_GRAPH_BASE = "https://graph.facebook.com/v21.0"
+META_GRAPH_BASE    = "https://graph.facebook.com/v21.0"
+HUBSPOT_API_BASE   = "https://api.hubapi.com"
+HS_PIPELINE_INBOUND = "793577095"   # Placements — Inbound Sales Stage
+HS_STAGE_SCHEDULED  = "1162444910"  # Meeting Scheduled
+HS_STAGE_NOSH       = "1162732907"  # No-show
+
+def get_hs_token() -> str:
+    return os.getenv("HUBSPOT_API_KEY", "")
 
 def get_token() -> str:
     return os.getenv("META_ACCESS_TOKEN", "")
@@ -289,6 +296,90 @@ async def _fetch_ad_creatives_by_ids(ad_ids: list, token: str) -> dict:
             for ad_id, info in await asyncio.gather(*tasks):
                 if info:
                     result[ad_id] = info
+    return result
+
+
+# ── HubSpot API helpers ───────────────────────────────────────────────────────
+
+async def _hs_search_deals(since_ms: int, until_ms: int) -> list:
+    token = get_hs_token()
+    deals, after = [], None
+    async with httpx.AsyncClient() as c:
+        while True:
+            body: dict = {
+                "filterGroups": [{"filters": [
+                    {"propertyName": "pipeline",   "operator": "EQ",  "value": HS_PIPELINE_INBOUND},
+                    {"propertyName": "createdate", "operator": "GTE", "value": str(since_ms)},
+                    {"propertyName": "createdate", "operator": "LTE", "value": str(until_ms)},
+                ]}],
+                "properties": ["dealstage", "createdate", "dealname"],
+                "limit": 100,
+            }
+            if after:
+                body["after"] = after
+            try:
+                r = await c.post(
+                    f"{HUBSPOT_API_BASE}/crm/v3/objects/deals/search",
+                    headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                    json=body, timeout=20,
+                )
+                if r.status_code != 200:
+                    print(f"[hs deals] {r.status_code}: {r.text[:200]}")
+                    break
+                data = r.json()
+                deals.extend(data.get("results", []))
+                after = data.get("paging", {}).get("next", {}).get("after")
+                if not after:
+                    break
+            except Exception as e:
+                print(f"[hs deals] {e}")
+                break
+    return deals
+
+async def _hs_batch_associations(deal_ids: list, token: str) -> dict:
+    """Returns {deal_id_str: [contact_id_str, ...]}"""
+    result: dict = {}
+    async with httpx.AsyncClient() as c:
+        for i in range(0, len(deal_ids), 100):
+            batch = [str(d) for d in deal_ids[i:i+100]]
+            try:
+                r = await c.post(
+                    f"{HUBSPOT_API_BASE}/crm/v4/associations/deals/contacts/batch/read",
+                    headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                    json={"inputs": [{"id": d} for d in batch]},
+                    timeout=20,
+                )
+                if r.status_code == 200:
+                    for item in r.json().get("results", []):
+                        from_id = str(item.get("from", {}).get("id", ""))
+                        result[from_id] = [str(t["toObjectId"]) for t in item.get("to", [])]
+            except Exception as e:
+                print(f"[hs assoc batch] {e}")
+    return result
+
+async def _hs_batch_contacts(contact_ids: list, token: str) -> dict:
+    """Returns {contact_id_str: {utm_campaign, utm_content}}"""
+    result: dict = {}
+    async with httpx.AsyncClient() as c:
+        for i in range(0, len(contact_ids), 100):
+            batch = contact_ids[i:i+100]
+            try:
+                r = await c.post(
+                    f"{HUBSPOT_API_BASE}/crm/v3/objects/contacts/batch/read",
+                    headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                    json={"inputs": [{"id": cid} for cid in batch],
+                          "properties": ["email", "utm_campaign", "utm_content"]},
+                    timeout=15,
+                )
+                if r.status_code == 200:
+                    for ct in r.json().get("results", []):
+                        props = ct.get("properties", {})
+                        result[str(ct["id"])] = {
+                            "utm_campaign": props.get("utm_campaign") or "",
+                            "utm_content":  props.get("utm_content")  or "",
+                        }
+            except Exception as e:
+                print(f"[hs contacts] {e}")
     return result
 
 
@@ -753,3 +844,13 @@ async def api_debug_conversions():
         "cv_schedule_mapped": list(_cv_sched_types),
         "cv_lead_web_mapped": list(_cv_lead_web_types),
     })
+
+
+@app.get("/api/hubspot/funnel")
+async def api_hubspot_funnel():
+    cache_path = os.path.join(os.path.dirname(__file__), "hubspot_cache.json")
+    if not os.path.exists(cache_path):
+        raise HTTPException(status_code=503, detail="HubSpot cache not found. Run build_hs_cache.py first.")
+    with open(cache_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return JSONResponse(data)

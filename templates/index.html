@@ -389,6 +389,7 @@
           <button class="tab"        data-l="adset"     onclick="setLevel(this)">Ad Sets</button>
           <button class="tab"        data-l="creative"  onclick="setLevel(this)">Creatives</button>
           <button class="tab"        data-l="lp"        onclick="setLevel(this)">Landing Pages</button>
+          <button class="tab"        data-l="hubspot"   onclick="setLevel(this)">HubSpot</button>
         </div>
       </div>
       <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
@@ -451,6 +452,44 @@
           <thead><tr id="lpTableHead"></tr></thead>
           <tbody id="lpTableBody"></tbody>
         </table>
+      </div>
+    </div>
+
+    <div id="hubspotView" style="display:none;">
+      <div id="hsFunnelCards" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;"></div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+        <div style="flex:1;min-width:300px;">
+          <div class="section-row" style="margin-bottom:10px;"><span class="section-title">By Campaign</span></div>
+          <div class="table-wrap" style="overflow-x:auto;">
+            <table class="data-table" id="hsCampTable">
+              <thead><tr>
+                <th style="text-align:left;min-width:220px;">utm_campaign <span class="th-sort-icon"></span></th>
+                <th>Booked <span class="th-sort-icon"></span></th>
+                <th>Held <span class="th-sort-icon"></span></th>
+                <th>No Show <span class="th-sort-icon"></span></th>
+                <th>Scheduled <span class="th-sort-icon"></span></th>
+                <th>Show Rate <span class="th-sort-icon"></span></th>
+              </tr></thead>
+              <tbody id="hsCampBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div style="flex:1;min-width:300px;">
+          <div class="section-row" style="margin-bottom:10px;"><span class="section-title">By Creative (utm_content)</span></div>
+          <div class="table-wrap" style="overflow-x:auto;">
+            <table class="data-table" id="hsContTable">
+              <thead><tr>
+                <th style="text-align:left;min-width:220px;">utm_content <span class="th-sort-icon"></span></th>
+                <th>Booked <span class="th-sort-icon"></span></th>
+                <th>Held <span class="th-sort-icon"></span></th>
+                <th>No Show <span class="th-sort-icon"></span></th>
+                <th>Scheduled <span class="th-sort-icon"></span></th>
+                <th>Show Rate <span class="th-sort-icon"></span></th>
+              </tr></thead>
+              <tbody id="hsContBody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -693,7 +732,15 @@ async function load() {
   show('loadingEl'); hide('content'); hide('errBox');
   const qs = buildQS();
   try {
-    if (state.level === 'creative') {
+    if (state.level === 'hubspot') {
+      const r = await fetch(`/api/hubspot/funnel?${qs}`);
+      if (!r.ok) { const e = await r.json(); throw new Error(e.detail||'HubSpot error'); }
+      state.hsData = await r.json();
+      hide('metricsGrid'); hide('chartWrap');
+      document.getElementById('periodLabel').textContent = `${fd(state.hsData.since)} → ${fd(state.hsData.until)}`;
+      renderHubspot();
+      hide('loadingEl'); show('content'); updateDrLabel();
+    } else if (state.level === 'creative') {
       const [crRes, dRes] = await Promise.all([fetch(`/api/creatives?${qs}`), fetch(`/api/daily?${qs}`)]);
       if (!crRes.ok) { const e = await crRes.json(); throw new Error(e.detail||'Error'); }
       state.creativeData = await crRes.json(); state.dailyData = dRes.ok ? await dRes.json() : null; state.data = null; state.lpData = null;
@@ -977,8 +1024,10 @@ function resetMs(){msSelected=null;crStatusFilter='active';document.querySelecto
 
 function renderItems() {
   const q=document.getElementById('searchInp').value.toLowerCase();
-  if(state.level==='creative'){
-    show('creativeView');hide('tableView');hide('lpView');
+  if(state.level==='hubspot'){
+    show('hubspotView');hide('tableView');hide('creativeView');hide('lpView');
+  } else if(state.level==='creative'){
+    hide('hubspotView');show('creativeView');hide('tableView');hide('lpView');
     if(crViewMode==='table'){hide('creativeGrid');show('crTableWrap');renderCrTableHeader();renderCreativeTable(q);}
     else{show('creativeGrid');hide('crTableWrap');renderCreativeGrid(q);}
     if(state.creativeData){
@@ -987,7 +1036,7 @@ function renderItems() {
       renderChart();
     }
   } else if(state.level==='lp'){
-    show('lpView');hide('tableView');hide('creativeView');
+    hide('hubspotView');show('lpView');hide('tableView');hide('creativeView');
     renderLpTable(q);
     if(state.lpData){
       const filtered=(state.lpData.items||[]).filter(r=>!q||r.lp.toLowerCase().includes(q));
@@ -995,11 +1044,39 @@ function renderItems() {
       scheduleLpDailyFetch(q);
     }
   } else {
-    show('tableView');hide('creativeView');hide('lpView');
+    hide('hubspotView');show('tableView');hide('creativeView');hide('lpView');
     renderTable(q);
     if(state.data){if(msSelected!==null){const f=filterByMs(state.data?.items||[]).filter(r=>!q||r.name.toLowerCase().includes(q));renderMetrics(computeSummaryFromItems(f),false);}else if(!q){renderMetrics(null,true);}else{const f=(state.data?.items||[]).filter(r=>r.name.toLowerCase().includes(q));renderMetrics(computeSummaryFromItems(f),false);}}
   }
 }
+function renderHubspot() {
+  const d = state.hsData; if(!d) return;
+  const s = d.summary;
+  const cards = [
+    {label:'Booked',       value: s.booked,    fmt: v=>v},
+    {label:'Held',         value: s.held,       fmt: v=>v},
+    {label:'No Show',      value: s.no_show,    fmt: v=>v},
+    {label:'Scheduled',    value: s.scheduled,  fmt: v=>v},
+    {label:'Show Rate',    value: s.show_rate,  fmt: v=>v!=null?v+'%':'—'},
+  ];
+  document.getElementById('hsFunnelCards').innerHTML = cards.map(c=>`
+    <div class="m-card" style="cursor:default;min-width:110px;flex:1;">
+      <div class="m-label">${c.label}</div>
+      <div class="m-value">${c.fmt(c.value)}</div>
+    </div>`).join('');
+
+  const hsRow = (item, labelKey) => {
+    const sr = item.show_rate != null ? item.show_rate+'%' : '—';
+    return `<tr>
+      <td style="text-align:left;word-break:break-word;white-space:normal;max-width:300px;" title="${esc(item.label)}">${esc(item.label)}</td>
+      <td>${item.booked}</td><td>${item.held}</td><td>${item.no_show}</td><td>${item.scheduled}</td>
+      <td><span style="font-weight:600;color:${item.show_rate>=50?'var(--green)':'var(--red)'}">${sr}</span></td>
+    </tr>`;
+  };
+  document.getElementById('hsCampBody').innerHTML = (d.by_campaign||[]).map(r=>hsRow(r,'campaign')).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No data</td></tr>';
+  document.getElementById('hsContBody').innerHTML = (d.by_content||[]).map(r=>hsRow(r,'content')).join('')   || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No data</td></tr>';
+}
+
 function nameCell(r){const risks=(r.risks||[]).map(t=>`<span class="risk-tag${t==='High Cost/Appt'?' appt':''}">⚠ ${t}</span>`).join('');return`<span class="name-text" title="${esc(r.name)}">${esc(r.name)}</span>${risks}`;}
 function statusCell(s){const info=crStatusInfo(s||'UNKNOWN');if(!s||s==='UNKNOWN')return'<span class="num muted">—</span>';return`<span class="cr-status-badge ${info.cls}" style="font-size:.7rem;padding:2px 7px;position:static">${info.label}</span>`;}
 function budgetCell(r){if(!r.budget)return'<span class="num muted">—</span>';return`<span class="num">${fmtR(r.budget)}<span class="muted" style="font-size:.7rem"> /${r.budget_type==='daily'?'d':'total'}</span></span>`;}
