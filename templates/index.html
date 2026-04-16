@@ -731,7 +731,7 @@ function loadPrefs() { try { return { ...DEFAULT_PREFS, ...JSON.parse(localStora
 function savePrefs(p) { localStorage.setItem(PREF_KEY, JSON.stringify(p)); }
 let prefs = loadPrefs();
 
-let state = { preset:'last_7d', since:null, until:null, accountId:null, level:'campaign', data:null, dailyData:null, creativeData:null, lpData:null, sort:{ key:'spend', dir:'desc' }, crSort:{ key:'spend', dir:'desc' }, lpSort:{ key:'spend', dir:'desc' }, hsCampSort:{key:'booked',dir:'desc'}, hsContSort:{key:'booked',dir:'desc'}, hsExcludeNoUtm:true };
+let state = { preset:'last_7d', since:null, until:null, accountId:null, level:'campaign', data:null, dailyData:null, creativeData:null, lpData:null, sort:{ key:'spend', dir:'desc' }, crSort:{ key:'spend', dir:'desc' }, lpSort:{ key:'spend', dir:'desc' }, hsCampSort:{key:'booked',dir:'desc'}, hsContSort:{key:'booked',dir:'desc'}, hsExcludeNoUtm:false };
 let chart = null;
 
 function allMetricDefs() { return [...BASE_METRICS, ...prefs.customMetrics.map(cm => ({ key:cm.id, label:cm.name, custom:true, fmt: v => fmtCustom(v,cm.format), invert: cm.invert===true||cm.invert==='true' }))]; }
