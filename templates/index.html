@@ -1696,8 +1696,8 @@ function renderExecSpend(data) {
       <td style="${tdC}">${fmtMoney(r.cpmh)}</td>
       <td style="${tdN}">${fmtN(r.sql)}</td>
       <td style="${tdC}">${fmtMoney(r.cpsql)}</td>
-      <td style="${tdN}">${na}</td>
-      <td style="${tdN}">${na}</td>
+      <td style="${tdN}">${fmtN(r.el_sent)}</td>
+      <td style="${tdN}">${fmtN(r.el_signed)}</td>
     </tr>`;
   });
   html += '</tbody></table></div>';
