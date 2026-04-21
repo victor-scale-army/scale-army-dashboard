@@ -855,13 +855,20 @@ def _fetch_hs_contacts() -> list:
         date = _parse_hs_date(raw_date)
         if not date or len(date) < 10:
             continue
+        def _truthy(v):
+            """HubSpot exports empty fields as '(No value)' — treat as empty."""
+            s = str(v or "").strip()
+            return bool(s) and s != "(No value)"
+
         email       = str(row.get("Email", "") or "").strip().lower()
         mql_val     = str(row.get("MQL", "") or "").strip()
         sql_val     = str(row.get("SQL", "") or "").strip()
         attribution = str(row.get("Attribution (Contact-Level)", "") or "").strip() or "(unknown)"
-        mh          = bool(str(row.get(_HS_MH_COL, "") or "").strip())
-        el_sent     = bool(str(row.get(_HS_EL_SENT_COL, "") or "").strip())
-        el_signed   = bool(str(row.get(_HS_EL_SIGNED_COL, "") or "").strip())
+        # MH: meeting was held = outcome exists and is not No Show / (No value)
+        mh_val      = str(row.get(_HS_MH_COL, "") or "").strip()
+        mh          = bool(mh_val) and mh_val not in {"(No value)", "No Show"}
+        el_sent     = _truthy(row.get(_HS_EL_SENT_COL, ""))
+        el_signed   = _truthy(row.get(_HS_EL_SIGNED_COL, ""))
         contacts.append({
             "date":         date,
             "email":        email,
