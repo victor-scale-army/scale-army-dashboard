@@ -392,6 +392,30 @@
       <div id="execP18Content"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
     </div>
 
+    <!-- Panel 1.9 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+      <div id="pt-19" contenteditable="true" spellcheck="false" style="font-size:.9rem;font-weight:600;margin-bottom:16px;outline:none;cursor:text;border-bottom:1px dashed transparent;" onmouseover="this.style.borderBottomColor='var(--border)'" onmouseout="this.style.borderBottomColor='transparent'" title="Click to edit">Cost per Meeting Booked per Attribution</div>
+      <div id="execP19Content"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
+    </div>
+
+    <!-- Panel 1.10 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+      <div id="pt-110" contenteditable="true" spellcheck="false" style="font-size:.9rem;font-weight:600;margin-bottom:16px;outline:none;cursor:text;border-bottom:1px dashed transparent;" onmouseover="this.style.borderBottomColor='var(--border)'" onmouseout="this.style.borderBottomColor='transparent'" title="Click to edit">Cost per Meeting Held per Attribution</div>
+      <div id="execP110Content"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
+    </div>
+
+    <!-- Panel 1.11 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+      <div id="pt-111" contenteditable="true" spellcheck="false" style="font-size:.9rem;font-weight:600;margin-bottom:16px;outline:none;cursor:text;border-bottom:1px dashed transparent;" onmouseover="this.style.borderBottomColor='var(--border)'" onmouseout="this.style.borderBottomColor='transparent'" title="Click to edit">Cost per SQL per Attribution</div>
+      <div id="execP111Content"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
+    </div>
+
+    <!-- Panel 1.12 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+      <div id="pt-112" contenteditable="true" spellcheck="false" style="font-size:.9rem;font-weight:600;margin-bottom:16px;outline:none;cursor:text;border-bottom:1px dashed transparent;" onmouseover="this.style.borderBottomColor='var(--border)'" onmouseout="this.style.borderBottomColor='transparent'" title="Click to edit">Weekly Trend</div>
+      <div id="execP112Content"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
+    </div>
+
   </div>
 
   <!-- ── Meta Ads view ───────────────────────────────────────────────────── -->
@@ -1614,7 +1638,7 @@ let execPreset = 'this_month';
 let execCustomSince = null, execCustomUntil = null;
 
 // ── Editable panel titles (localStorage persistence) ─────────────────────────
-const EDITABLE_IDS = ['pt-11','pt-12','pt-13','pt-14','pt-15','pt-16','pt-17','pt-18'];
+const EDITABLE_IDS = ['pt-11','pt-12','pt-13','pt-14','pt-15','pt-16','pt-17','pt-18','pt-19','pt-110','pt-111','pt-112'];
 function initEditableTitles() {
   EDITABLE_IDS.forEach(id => {
     const el = document.getElementById(id);
@@ -1653,26 +1677,32 @@ function setExecPreset(btn) {
 
 async function loadExec() {
   ['execFunnelContent','execSpendContent','execAttrContent',
-   'execP14Content','execP15Content','execP16Content','execP17Content','execP18Content']
+   'execP14Content','execP15Content','execP16Content','execP17Content','execP18Content',
+   'execP19Content','execP110Content','execP111Content','execP112Content']
     .forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML='<div style="color:var(--muted);font-size:.82rem;">Loading…</div>'; });
   const params = (execCustomSince && execCustomUntil)
     ? `since=${execCustomSince}&until=${execCustomUntil}`
     : `preset=${execPreset}`;
   try {
-    const [fr, sr, ar, br] = await Promise.all([
+    const [fr, sr, ar, br, tr] = await Promise.all([
       fetch(`/api/executive/funnel?${params}`).then(r => r.json()),
       fetch(`/api/executive/spend?${params}`).then(r => r.json()),
       fetch(`/api/executive/attribution?${params}`).then(r => r.json()),
       fetch(`/api/executive/attr_breakdown?${params}`).then(r => r.json()),
+      fetch(`/api/executive/trend?${params}`).then(r => r.json()),
     ]);
     renderExecFunnel(fr);
     renderExecSpend(sr);
     renderExecAttribution(ar);
-    renderAttrPanel('execP14Content','chart14', br.rows, {countKey:'mb', pctKey:'mb_pct', extraKey:'cpmb',         extraLabel:'CPMB',          extraFmt:'money', sortKey:'mb'});
-    renderAttrPanel('execP15Content','chart15', br.rows, {countKey:'mh', pctKey:'mh_pct', extraKey:'show_up_rate', extraLabel:'Show-Up Rate',  extraFmt:'pct',   sortKey:'mh'});
-    renderAttrPanel('execP16Content','chart16', br.rows, {countKey:'sql',pctKey:'sql_pct',extraKey:'sql_rate',     extraLabel:'SQL Rate',       extraFmt:'pct',   sortKey:'sql'});
-    renderAttrPanel('execP17Content','chart17', br.rows, {countKey:'el_sent', pctKey:'el_sent_pct', extraKey:null, extraLabel:null, extraFmt:null, sortKey:'el_sent'});
-    renderAttrPanel('execP18Content','chart18', br.rows, {countKey:'el_signed',pctKey:'el_signed_pct',extraKey:'close_rate',extraLabel:'Close Rate',extraFmt:'pct',sortKey:'el_signed'});
+    renderAttrPanel('execP14Content','chart14', br.rows, {countKey:'mb',       pctKey:'mb_pct',       extraKey:'cpmb',        extraLabel:'CPMB',         extraFmt:'money', sortKey:'mb'});
+    renderAttrPanel('execP15Content','chart15', br.rows, {countKey:'mh',       pctKey:'mh_pct',       extraKey:'show_up_rate',extraLabel:'Show-Up Rate', extraFmt:'pct',   sortKey:'mh'});
+    renderAttrPanel('execP16Content','chart16', br.rows, {countKey:'sql',      pctKey:'sql_pct',      extraKey:'sql_rate',    extraLabel:'SQL Rate',     extraFmt:'pct',   sortKey:'sql'});
+    renderAttrPanel('execP17Content','chart17', br.rows, {countKey:'el_sent',  pctKey:'el_sent_pct',  extraKey:null,          extraLabel:null,           extraFmt:null,    sortKey:'el_sent'});
+    renderAttrPanel('execP18Content','chart18', br.rows, {countKey:'el_signed',pctKey:'el_signed_pct',extraKey:'close_rate',  extraLabel:'Close Rate',   extraFmt:'pct',   sortKey:'el_signed'});
+    renderCostPanel('execP19Content', 'chart19',  br.rows, {countKey:'mb',  costKey:'cpmb',  costLabel:'Cost/MB'});
+    renderCostPanel('execP110Content','chart110', br.rows, {countKey:'mh',  costKey:'cpmh',  costLabel:'Cost/MH'});
+    renderCostPanel('execP111Content','chart111', br.rows, {countKey:'sql', costKey:'cpsql', costLabel:'CPSQL'});
+    renderTrendChart('execP112Content', 'chart112', tr);
   } catch(e) {
     document.getElementById('execFunnelContent').innerHTML = `<span style="color:#f87171">${e.message}</span>`;
   }
@@ -1917,6 +1947,143 @@ function renderAttrPanel(containerId, chartId, allRows, cfg) {
       scales: {
         x: { ticks:{color:'#888',font:{size:11}}, grid:{color:'rgba(255,255,255,.06)'} },
         y: { ticks:{color:'#ccc',font:{size:11}}, grid:{display:false} }
+      }
+    }
+  });
+}
+
+// ── Panels 1.9/1.10/1.11 — Cost per [MB|MH|SQL] per Attribution ─────────────
+const PAID_ATTR_ORDER = [
+  'Meta Ads - On-site Conversion',
+  'Meta Ads - Callingly/Instant Forms',
+  'Google Ads',
+  'YouTube',
+  'X Ads',
+  'LinkedIn Ads',
+];
+const _costCharts = {};
+function renderCostPanel(containerId, chartId, allRows, cfg) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const fmtM = v => v != null ? '$' + v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '<span style="color:var(--border)">—</span>';
+
+  // Build paid rows: use PAID_ATTR_ORDER as skeleton, merge real data
+  const byAttr = {};
+  allRows.forEach(r => { byAttr[r.attribution] = r; });
+
+  const rows = PAID_ATTR_ORDER.map(attr => {
+    const r = byAttr[attr] || {};
+    return { attribution: attr, spend: r.spend ?? null, count: r[cfg.countKey] ?? 0, cost: r[cfg.costKey] ?? null };
+  });
+
+  // Total paid row
+  const paidSpend = rows.reduce((s, r) => s + (r.spend || 0), 0);
+  const paidCount = rows.reduce((s, r) => s + (r.count || 0), 0);
+  const paidCost  = paidSpend && paidCount ? round2(paidSpend / paidCount) : null;
+
+  const thS = 'font-size:.68rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:7px 12px;border-bottom:1px solid var(--border);white-space:nowrap;';
+  const tdS = 'padding:8px 12px;border-bottom:1px solid var(--border);font-size:.83rem;white-space:nowrap;';
+  let tbl = `<table style="border-collapse:collapse;width:100%;max-width:640px;">
+    <thead><tr>
+      <th style="${thS}text-align:left;">Attribution</th>
+      <th style="${thS}text-align:right;">Spend</th>
+      <th style="${thS}text-align:right;">${cfg.countKey.toUpperCase()}</th>
+      <th style="${thS}text-align:right;">${cfg.costLabel}</th>
+    </tr></thead><tbody>`;
+  rows.forEach(r => {
+    tbl += `<tr>
+      <td style="${tdS}">${r.attribution}</td>
+      <td style="${tdS}text-align:right;">${fmtM(r.spend)}</td>
+      <td style="${tdS}text-align:right;font-weight:600;">${r.count > 0 ? r.count.toLocaleString() : '<span style="color:var(--border)">—</span>'}</td>
+      <td style="${tdS}text-align:right;">${fmtM(r.cost)}</td>
+    </tr>`;
+  });
+  tbl += `<tr style="font-weight:700;border-top:2px solid var(--border);">
+    <td style="${tdS}color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;">Total (paid)</td>
+    <td style="${tdS}text-align:right;">${fmtM(paidSpend || null)}</td>
+    <td style="${tdS}text-align:right;">${paidCount > 0 ? paidCount.toLocaleString() : '<span style="color:var(--border)">—</span>'}</td>
+    <td style="${tdS}text-align:right;">${fmtM(paidCost)}</td>
+  </tr>`;
+  tbl += '</tbody></table>';
+
+  // Chart — only rows with spend > 0
+  const chartRows = rows.filter(r => r.spend && r.spend > 0);
+  const canvasH = Math.min(chartRows.length * 44 + 40, 320);
+  container.innerHTML = `<div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;">
+    <div style="flex:0 0 auto;">${tbl}</div>
+    <div style="flex:1;min-width:260px;align-self:center;"><canvas id="${chartId}" style="max-height:${canvasH}px;"></canvas></div>
+  </div>`;
+
+  if (_costCharts[chartId]) { _costCharts[chartId].destroy(); delete _costCharts[chartId]; }
+  if (!chartRows.length) return;
+  const ctx = document.getElementById(chartId).getContext('2d');
+  _costCharts[chartId] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: chartRows.map(r => r.attribution),
+      datasets: [{
+        label: cfg.costLabel,
+        data: chartRows.map(r => r.cost || 0),
+        backgroundColor: 'rgba(237,232,208,0.75)',
+        borderColor: 'rgba(237,232,208,1)',
+        borderWidth: 1, borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` $${ctx.parsed.x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}` } }
+      },
+      scales: {
+        x: { ticks: { color:'#888', font:{size:11}, callback: v => '$'+v.toLocaleString() }, grid:{color:'rgba(255,255,255,.06)'} },
+        y: { ticks: { color:'#ccc', font:{size:11} }, grid:{display:false} }
+      }
+    }
+  });
+}
+function round2(n) { return Math.round(n * 100) / 100; }
+
+// ── Panel 1.12 — Weekly Trend ─────────────────────────────────────────────────
+let _trendChart = null;
+function renderTrendChart(containerId, chartId, data) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const series = data.series || [];
+  if (!series.length) { container.innerHTML = '<div style="color:var(--muted);font-size:.82rem;">No data for this period.</div>'; return; }
+
+  container.innerHTML = `<canvas id="${chartId}" style="max-height:320px;"></canvas>`;
+  if (_trendChart) { _trendChart.destroy(); _trendChart = null; }
+
+  const labels = series.map(s => s.date);
+  const colors = { nl:'rgba(120,160,200,0.85)', mb:'rgba(237,232,208,0.95)', mql:'rgba(160,200,140,0.85)', mh:'rgba(200,160,100,0.85)', sql:'rgba(180,120,200,0.85)', el_signed:'rgba(100,200,180,0.85)' };
+
+  const ctx = document.getElementById(chartId).getContext('2d');
+  _trendChart = new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        { type:'bar',  label:'Spend',        data: series.map(s=>s.spend),     backgroundColor:'rgba(255,180,50,0.25)', borderColor:'rgba(255,180,50,0.6)', borderWidth:1, yAxisID:'ySpend', order:2 },
+        { type:'line', label:'New Leads',    data: series.map(s=>s.nl),        borderColor:colors.nl,        backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:.3, yAxisID:'y', order:1 },
+        { type:'line', label:'Mtg Booked',   data: series.map(s=>s.mb),        borderColor:colors.mb,        backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:.3, yAxisID:'y', order:1 },
+        { type:'line', label:'MQL',          data: series.map(s=>s.mql),       borderColor:colors.mql,       backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:.3, yAxisID:'y', order:1 },
+        { type:'line', label:'Mtg Held',     data: series.map(s=>s.mh),        borderColor:colors.mh,        backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:.3, yAxisID:'y', order:1 },
+        { type:'line', label:'SQL',          data: series.map(s=>s.sql),       borderColor:colors.sql,       backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:.3, yAxisID:'y', order:1 },
+        { type:'line', label:'EL Signed',    data: series.map(s=>s.el_signed), borderColor:colors.el_signed, backgroundColor:'transparent', borderWidth:2, pointRadius:3, tension:.3, yAxisID:'y', order:1 },
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { labels:{ color:'#aaa', font:{size:11}, boxWidth:12 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.dataset.yAxisID==='ySpend' ? '$'+ctx.parsed.y.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : ctx.parsed.y}` } }
+      },
+      scales: {
+        x: { ticks:{color:'#888',font:{size:10},maxRotation:45}, grid:{color:'rgba(255,255,255,.05)'} },
+        y: { position:'left',  ticks:{color:'#888',font:{size:11}}, grid:{color:'rgba(255,255,255,.06)'}, title:{display:true,text:'Volume',color:'#666',font:{size:10}} },
+        ySpend: { position:'right', ticks:{color:'#f59e0b',font:{size:10}, callback:v=>'$'+v.toLocaleString()}, grid:{display:false}, title:{display:true,text:'Spend',color:'#f59e0b',font:{size:10}} }
       }
     }
   });

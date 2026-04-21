@@ -1251,28 +1251,30 @@ async def api_executive_attr_breakdown(preset: str = "this_month", since: str = 
         except Exception:
             pass
 
-    def _cpmb(attr, mb_count):
-        if not mb_count: return None
+    def _attr_spend(attr):
         a = attr.lower()
-        if "callingly" in a or "instant" in a:
-            return round(spend_callingly / mb_count, 2) if spend_callingly else None
-        if "meta" in a or "facebook" in a:
-            return round(spend_onsite / mb_count, 2) if spend_onsite else None
+        if "callingly" in a or "instant" in a: return spend_callingly or None
+        if "meta" in a or "facebook" in a:     return spend_onsite    or None
         return None
 
+    def _cost(sp, n): return round(sp / n, 2) if sp and n else None
     def _pct(n, total): return round(n / total * 100, 1) if total else 0
     def _rate(n, d):    return round(n / d * 100, 1)     if d    else None
 
     rows = []
     for attr, d in agg.items():
+        sp = _attr_spend(attr)
         rows.append({
             "attribution":   attr,
             "nl":            d["nl"],       "nl_pct":       _pct(d["nl"],       total_nl),
             "mb":            d["mb"],       "mb_pct":       _pct(d["mb"],       total_mb),
-            "cpmb":          _cpmb(attr, d["mb"]),
+            "spend":         round(sp, 2) if sp else None,
+            "cpmb":          _cost(sp, d["mb"]),
             "mh":            d["mh"],       "mh_pct":       _pct(d["mh"],       total_mh),
+            "cpmh":          _cost(sp, d["mh"]),
             "show_up_rate":  _rate(d["mh"], d["mb"]),
             "sql":           d["sql"],      "sql_pct":      _pct(d["sql"],      total_sql),
+            "cpsql":         _cost(sp, d["sql"]),
             "sql_rate":      _rate(d["sql"], d["nl"]),
             "el_sent":       d["el_sent"],  "el_sent_pct":  _pct(d["el_sent"],  total_el_sent),
             "el_signed":     d["el_signed"],"el_signed_pct":_pct(d["el_signed"],total_el_signed),
@@ -1288,6 +1290,75 @@ async def api_executive_attr_breakdown(preset: str = "this_month", since: str = 
             "nl": total_nl, "mb": total_mb, "mh": total_mh,
             "sql": total_sql, "el_sent": total_el_sent, "el_signed": total_el_signed,
         },
+    })
+
+
+@app.get("/api/executive/trend")
+async def api_executive_trend(preset: str = "this_month", since: str = None, until: str = None):
+    """Panel 1.12 — Weekly Trend. Time-series of funnel stages + Meta spend."""
+    import datetime as _dt
+    d_since, d_until, _, _ = _compute_period(
+        preset if not (since and until) else None, since, until
+    )
+    ds = _date.fromisoformat(d_since)
+    du = _date.fromisoformat(d_until)
+    total_days = (du - ds).days + 1
+    weekly = total_days > 35
+
+    def _bucket(date_str: str) -> str:
+        """Return bucket key: YYYY-MM-DD of day, or Monday of week."""
+        d = _date.fromisoformat(date_str[:10])
+        if weekly:
+            return (d - timedelta(days=d.weekday())).isoformat()
+        return d.isoformat()
+
+    # Build ordered bucket list
+    buckets: list = []
+    cur = ds
+    while cur <= du:
+        b = _bucket(cur.isoformat())
+        if not buckets or buckets[-1] != b:
+            buckets.append(b)
+        cur += timedelta(days=1)
+
+    agg: dict = {b: {"nl":0,"mb":0,"mh":0,"mql":0,"sql":0,"el_signed":0,"spend":0.0} for b in buckets}
+
+    for c in _load_hs_new_leads(d_since, d_until, mkt_only=True):
+        b = _bucket(c["date"])
+        if b in agg: agg[b]["nl"] += 1
+
+    for c in _load_hs_contacts(d_since, d_until, mkt_only=True):
+        b = _bucket(c["date"])
+        if b in agg:
+            agg[b]["mb"] += 1
+            if c.get("mql"):      agg[b]["mql"]      += 1
+            if c.get("sql"):      agg[b]["sql"]      += 1
+            if c.get("el_signed"):agg[b]["el_signed"] += 1
+
+    for c in _load_hs_mh(d_since, d_until, mkt_only=True):
+        b = _bucket(c["date"])
+        if b in agg: agg[b]["mh"] += 1
+
+    # Meta daily spend
+    token = get_token(); accounts_list = get_accounts()
+    if token and accounts_list:
+        try:
+            await _load_custom_conversions()
+            for acc in accounts_list:
+                daily_rows = await _get_daily_insights(acc, token, d_since, d_until)
+                for row in daily_rows:
+                    b = _bucket(row.get("date_start", "")[:10])
+                    if b in agg:
+                        agg[b]["spend"] += float(row.get("spend", 0))
+        except Exception as e:
+            print(f"[trend] spend fetch failed: {e}")
+
+    series = [{"date": b, **agg[b], "spend": round(agg[b]["spend"], 2)} for b in buckets]
+
+    return JSONResponse({
+        "since": d_since, "until": d_until,
+        "granularity": "week" if weekly else "day",
+        "series": series,
     })
 
 
