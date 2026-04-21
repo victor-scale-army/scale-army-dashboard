@@ -362,6 +362,36 @@
       <div id="execAttrContent"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
     </div>
 
+    <!-- Panel 1.4 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+      <div id="pt-14" contenteditable="true" spellcheck="false" style="font-size:.9rem;font-weight:600;margin-bottom:16px;outline:none;cursor:text;border-bottom:1px dashed transparent;" onmouseover="this.style.borderBottomColor='var(--border)'" onmouseout="this.style.borderBottomColor='transparent'" title="Click to edit">Meetings Booked per MKT Attribution</div>
+      <div id="execP14Content"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
+    </div>
+
+    <!-- Panel 1.5 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+      <div id="pt-15" contenteditable="true" spellcheck="false" style="font-size:.9rem;font-weight:600;margin-bottom:16px;outline:none;cursor:text;border-bottom:1px dashed transparent;" onmouseover="this.style.borderBottomColor='var(--border)'" onmouseout="this.style.borderBottomColor='transparent'" title="Click to edit">Meetings Held per MKT Attribution</div>
+      <div id="execP15Content"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
+    </div>
+
+    <!-- Panel 1.6 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+      <div id="pt-16" contenteditable="true" spellcheck="false" style="font-size:.9rem;font-weight:600;margin-bottom:16px;outline:none;cursor:text;border-bottom:1px dashed transparent;" onmouseover="this.style.borderBottomColor='var(--border)'" onmouseout="this.style.borderBottomColor='transparent'" title="Click to edit">Total SQLs per MKT Attribution</div>
+      <div id="execP16Content"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
+    </div>
+
+    <!-- Panel 1.7 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+      <div id="pt-17" contenteditable="true" spellcheck="false" style="font-size:.9rem;font-weight:600;margin-bottom:16px;outline:none;cursor:text;border-bottom:1px dashed transparent;" onmouseover="this.style.borderBottomColor='var(--border)'" onmouseout="this.style.borderBottomColor='transparent'" title="Click to edit">Total EL Sent per MKT Attribution</div>
+      <div id="execP17Content"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
+    </div>
+
+    <!-- Panel 1.8 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+      <div id="pt-18" contenteditable="true" spellcheck="false" style="font-size:.9rem;font-weight:600;margin-bottom:16px;outline:none;cursor:text;border-bottom:1px dashed transparent;" onmouseover="this.style.borderBottomColor='var(--border)'" onmouseout="this.style.borderBottomColor='transparent'" title="Click to edit">Total EL Signed per MKT Attribution</div>
+      <div id="execP18Content"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
+    </div>
+
   </div>
 
   <!-- ── Meta Ads view ───────────────────────────────────────────────────── -->
@@ -1584,7 +1614,7 @@ let execPreset = 'this_month';
 let execCustomSince = null, execCustomUntil = null;
 
 // ── Editable panel titles (localStorage persistence) ─────────────────────────
-const EDITABLE_IDS = ['pt-11','pt-12','pt-13'];
+const EDITABLE_IDS = ['pt-11','pt-12','pt-13','pt-14','pt-15','pt-16','pt-17','pt-18'];
 function initEditableTitles() {
   EDITABLE_IDS.forEach(id => {
     const el = document.getElementById(id);
@@ -1622,21 +1652,27 @@ function setExecPreset(btn) {
 }
 
 async function loadExec() {
-  document.getElementById('execFunnelContent').innerHTML = '<div style="color:var(--muted);font-size:.82rem;">Loading…</div>';
-  document.getElementById('execSpendContent').innerHTML  = '<div style="color:var(--muted);font-size:.82rem;">Loading…</div>';
-  document.getElementById('execAttrContent').innerHTML   = '<div style="color:var(--muted);font-size:.82rem;">Loading…</div>';
+  ['execFunnelContent','execSpendContent','execAttrContent',
+   'execP14Content','execP15Content','execP16Content','execP17Content','execP18Content']
+    .forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML='<div style="color:var(--muted);font-size:.82rem;">Loading…</div>'; });
   const params = (execCustomSince && execCustomUntil)
     ? `since=${execCustomSince}&until=${execCustomUntil}`
     : `preset=${execPreset}`;
   try {
-    const [fr, sr, ar] = await Promise.all([
+    const [fr, sr, ar, br] = await Promise.all([
       fetch(`/api/executive/funnel?${params}`).then(r => r.json()),
       fetch(`/api/executive/spend?${params}`).then(r => r.json()),
       fetch(`/api/executive/attribution?${params}`).then(r => r.json()),
+      fetch(`/api/executive/attr_breakdown?${params}`).then(r => r.json()),
     ]);
     renderExecFunnel(fr);
     renderExecSpend(sr);
     renderExecAttribution(ar);
+    renderAttrPanel('execP14Content','chart14', br.rows, {countKey:'mb', pctKey:'mb_pct', extraKey:'cpmb',         extraLabel:'CPMB',          extraFmt:'money', sortKey:'mb'});
+    renderAttrPanel('execP15Content','chart15', br.rows, {countKey:'mh', pctKey:'mh_pct', extraKey:'show_up_rate', extraLabel:'Show-Up Rate',  extraFmt:'pct',   sortKey:'mh'});
+    renderAttrPanel('execP16Content','chart16', br.rows, {countKey:'sql',pctKey:'sql_pct',extraKey:'sql_rate',     extraLabel:'SQL Rate',       extraFmt:'pct',   sortKey:'sql'});
+    renderAttrPanel('execP17Content','chart17', br.rows, {countKey:'el_sent', pctKey:'el_sent_pct', extraKey:null, extraLabel:null, extraFmt:null, sortKey:'el_sent'});
+    renderAttrPanel('execP18Content','chart18', br.rows, {countKey:'el_signed',pctKey:'el_signed_pct',extraKey:'close_rate',extraLabel:'Close Rate',extraFmt:'pct',sortKey:'el_signed'});
   } catch(e) {
     document.getElementById('execFunnelContent').innerHTML = `<span style="color:#f87171">${e.message}</span>`;
   }
@@ -1790,6 +1826,97 @@ function renderExecAttribution(data) {
           ticks: { color: '#ccc', font: { size: 11 } },
           grid:  { display: false },
         }
+      }
+    }
+  });
+}
+
+const _attrCharts14_18 = {};
+function renderAttrPanel(containerId, chartId, allRows, cfg) {
+  const rows = [...allRows]
+    .filter(r => (r[cfg.countKey] || 0) > 0)
+    .sort((a, b) => (b[cfg.sortKey] || 0) - (a[cfg.sortKey] || 0));
+
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  if (!rows.length) { container.innerHTML = '<div style="color:var(--muted);font-size:.82rem;">No data for this period.</div>'; return; }
+
+  const total = rows.reduce((s, r) => s + (r[cfg.countKey] || 0), 0);
+
+  const fmtExtra = (val) => {
+    if (val == null) return '<span style="color:var(--border)">—</span>';
+    if (cfg.extraFmt === 'money') return '$' + val.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    if (cfg.extraFmt === 'pct')   return val + '%';
+    return val;
+  };
+
+  const thS = 'font-size:.68rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:7px 12px;border-bottom:1px solid var(--border);white-space:nowrap;';
+  const tdS = 'padding:8px 12px;border-bottom:1px solid var(--border);font-size:.83rem;white-space:nowrap;';
+
+  let tbl = `<table style="border-collapse:collapse;width:100%;max-width:${cfg.extraKey ? '720px' : '560px'};">
+    <thead><tr>
+      <th style="${thS}text-align:left;">Attribution</th>
+      <th style="${thS}text-align:right;">Count</th>
+      <th style="${thS}text-align:right;">% of Total</th>
+      ${cfg.extraKey ? `<th style="${thS}text-align:right;">${cfg.extraLabel}</th>` : ''}
+    </tr></thead><tbody>`;
+
+  rows.forEach(r => {
+    tbl += `<tr>
+      <td style="${tdS}">${r.attribution}</td>
+      <td style="${tdS}text-align:right;font-weight:600;">${(r[cfg.countKey]||0).toLocaleString()}</td>
+      <td style="${tdS}text-align:right;color:var(--accent);">${r[cfg.pctKey] || 0}%</td>
+      ${cfg.extraKey ? `<td style="${tdS}text-align:right;">${fmtExtra(r[cfg.extraKey])}</td>` : ''}
+    </tr>`;
+  });
+
+  tbl += `<tr style="font-weight:700;border-top:2px solid var(--border);">
+    <td style="${tdS}color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;">Total</td>
+    <td style="${tdS}text-align:right;">${total.toLocaleString()}</td>
+    <td style="${tdS}text-align:right;">100%</td>
+    ${cfg.extraKey ? `<td style="${tdS}"></td>` : ''}
+  </tr>`;
+  tbl += '</tbody></table>';
+
+  const chartHtml = `<canvas id="${chartId}" style="max-height:${Math.min(rows.length * 36 + 40, 440)}px;"></canvas>`;
+  container.innerHTML = `<div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;">
+    <div style="flex:0 0 auto;">${tbl}</div>
+    <div style="flex:1;min-width:280px;align-self:center;">${chartHtml}</div>
+  </div>`;
+
+  if (_attrCharts14_18[chartId]) { _attrCharts14_18[chartId].destroy(); delete _attrCharts14_18[chartId]; }
+  const ctx = document.getElementById(chartId).getContext('2d');
+  _attrCharts14_18[chartId] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.attribution),
+      datasets: [{
+        data: rows.map(r => r[cfg.countKey] || 0),
+        backgroundColor: 'rgba(237,232,208,0.75)',
+        borderColor:     'rgba(237,232,208,1)',
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const r = rows[ctx.dataIndex];
+              let s = ` ${ctx.parsed.x.toLocaleString()} (${r[cfg.pctKey] || 0}%)`;
+              if (cfg.extraKey && r[cfg.extraKey] != null) s += `  •  ${cfg.extraLabel}: ${fmtExtra(r[cfg.extraKey])}`;
+              return s;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks:{color:'#888',font:{size:11}}, grid:{color:'rgba(255,255,255,.06)'} },
+        y: { ticks:{color:'#ccc',font:{size:11}}, grid:{display:false} }
       }
     }
   });

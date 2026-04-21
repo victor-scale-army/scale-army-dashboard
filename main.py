@@ -1177,6 +1177,98 @@ async def api_executive_attribution(preset: str = "this_month", since: str = Non
     })
 
 
+@app.get("/api/executive/attr_breakdown")
+async def api_executive_attr_breakdown(preset: str = "this_month", since: str = None, until: str = None):
+    """Panels 1.4-1.8 — Per-attribution breakdown for MB, MH, SQL, EL Sent, EL Signed."""
+    d_since, d_until, _, _ = _compute_period(
+        preset if not (since and until) else None, since, until
+    )
+
+    nl_all = _load_hs_new_leads(d_since, d_until, mkt_only=False)
+    mb_all = _load_hs_contacts(d_since, d_until, mkt_only=False)
+    mh_all = _load_hs_mh(d_since, d_until, mkt_only=False)
+
+    agg: dict = {}
+    def _get(attr):
+        if attr not in agg:
+            agg[attr] = {"nl": 0, "mb": 0, "mh": 0, "sql": 0, "el_sent": 0, "el_signed": 0}
+        return agg[attr]
+
+    for c in nl_all: _get(c["attribution"])["nl"] += 1
+    for c in mb_all:
+        d = _get(c["attribution"])
+        d["mb"] += 1
+        if c.get("sql"):      d["sql"]      += 1
+        if c.get("el_sent"):  d["el_sent"]  += 1
+        if c.get("el_signed"):d["el_signed"]+= 1
+    for c in mh_all: _get(c["attribution"])["mh"] += 1
+
+    total_nl       = sum(d["nl"]       for d in agg.values())
+    total_mb       = sum(d["mb"]       for d in agg.values())
+    total_mh       = sum(d["mh"]       for d in agg.values())
+    total_sql      = sum(d["sql"]      for d in agg.values())
+    total_el_sent  = sum(d["el_sent"]  for d in agg.values())
+    total_el_signed= sum(d["el_signed"]for d in agg.values())
+
+    # Meta spend for CPMB
+    await _load_custom_conversions()
+    token = get_token()
+    accounts_list = get_accounts()
+    spend_callingly = 0.0
+    spend_onsite    = 0.0
+    if token and accounts_list:
+        try:
+            for acc in accounts_list:
+                camp_rows = await _get_insights(acc, token, d_since, d_until, "campaign")
+                for row in camp_rows:
+                    s = float(row.get("spend", 0))
+                    if "instant" in row.get("campaign_name", "").lower():
+                        spend_callingly += s
+                    else:
+                        spend_onsite += s
+        except Exception:
+            pass
+
+    def _cpmb(attr, mb_count):
+        if not mb_count: return None
+        a = attr.lower()
+        if "callingly" in a or "instant" in a:
+            return round(spend_callingly / mb_count, 2) if spend_callingly else None
+        if "meta" in a or "facebook" in a:
+            return round(spend_onsite / mb_count, 2) if spend_onsite else None
+        return None
+
+    def _pct(n, total): return round(n / total * 100, 1) if total else 0
+    def _rate(n, d):    return round(n / d * 100, 1)     if d    else None
+
+    rows = []
+    for attr, d in agg.items():
+        rows.append({
+            "attribution":   attr,
+            "nl":            d["nl"],       "nl_pct":       _pct(d["nl"],       total_nl),
+            "mb":            d["mb"],       "mb_pct":       _pct(d["mb"],       total_mb),
+            "cpmb":          _cpmb(attr, d["mb"]),
+            "mh":            d["mh"],       "mh_pct":       _pct(d["mh"],       total_mh),
+            "show_up_rate":  _rate(d["mh"], d["mb"]),
+            "sql":           d["sql"],      "sql_pct":      _pct(d["sql"],      total_sql),
+            "sql_rate":      _rate(d["sql"], d["nl"]),
+            "el_sent":       d["el_sent"],  "el_sent_pct":  _pct(d["el_sent"],  total_el_sent),
+            "el_signed":     d["el_signed"],"el_signed_pct":_pct(d["el_signed"],total_el_signed),
+            "close_rate":    _rate(d["el_signed"], d["sql"]),
+        })
+
+    rows.sort(key=lambda x: -x["mb"])
+
+    return JSONResponse({
+        "since": d_since, "until": d_until,
+        "rows": rows,
+        "totals": {
+            "nl": total_nl, "mb": total_mb, "mh": total_mh,
+            "sql": total_sql, "el_sent": total_el_sent, "el_signed": total_el_signed,
+        },
+    })
+
+
 @app.get("/api/debug/hs-columns")
 async def api_debug_hs_columns():
     """Returns all column names from the MB sheet — for debugging mismatches."""
