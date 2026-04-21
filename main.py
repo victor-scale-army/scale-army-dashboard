@@ -769,8 +769,8 @@ async def api_debug_conversions():
 
 # Canonical MKT attributions (source of truth = HubSpot Attribution field)
 MKT_ATTRIBUTIONS = {
-    "Meta Ads - On-site/Conversion",   # actual HubSpot value (lowercase s, hyphen)
-    "Meta Ads - On Site/Conversion",   # keep variant just in case
+    "Meta Ads - On-site Conversion",
+    "Meta Ads - On Site/Conversion",   # legacy variant
     "Meta Ads - Callingly",
     "Meta Ads - Callingly/Instant Forms",
     "Meta Ads",
@@ -824,7 +824,7 @@ def _normalize_meta_attr(attr: str, utm_campaign: str) -> str:
     if "meta" in a or "facebook" in a:
         if "instant" in utm_campaign.lower():
             return "Meta Ads - Callingly/Instant Forms"
-        return "Meta Ads - On-site/Conversion"
+        return "Meta Ads - On-site Conversion"
     return attr
 
 def _clean_utm(val: str) -> str:
