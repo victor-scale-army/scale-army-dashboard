@@ -1001,9 +1001,12 @@ async def api_executive_funnel(preset: str = "this_month", since: str = None, un
     def _pct_of_mb(num):
         return round(num / mb * 100, 1) if mb else None
 
+    def _pct_of_nl(num):
+        return round(num / nl * 100, 1) if nl else None
+
     stages = [
         {"stage": "New Leads",           "count": nl,        "conv_from_mb": None},
-        {"stage": "Meeting Booked (MB)", "count": mb,        "conv_from_mb": None},
+        {"stage": "Meeting Booked (MB)", "count": mb,        "conv_from_mb": _pct_of_nl(mb)},
         {"stage": "Meeting Held (MH)",   "count": mh,        "conv_from_mb": _pct_of_mb(mh)},
         {"stage": "MQL",                 "count": mql,       "conv_from_mb": _pct_of_mb(mql)},
         {"stage": "SQL",                 "count": sql,       "conv_from_mb": _pct_of_mb(sql)},
