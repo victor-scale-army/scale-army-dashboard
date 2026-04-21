@@ -806,13 +806,13 @@ def _attr_channel(attr: str, utm_campaign: str = "") -> str:
     return "other"
 
 # ── HubSpot live cache (auto-refresh every 15 min) ───────────────────────────
-_HS_SHEET_BASE  = "https://docs.google.com/spreadsheets/d/1szR5aHU5j1FijE4mBVmlx2A0AsA7-lvocgsbO6UFmCw/export?format=csv&gid="
-_HS_GID_MB      = "1408761440"
-_HS_MB_DATE_COL = "Date entered \"Meeting Scheduled (Placements — Inbound Sales Stage)\""
-_HS_MH_COL      = "Meeting Start Time"
-_HS_EL_SENT_COL = "Date Engagement Letter Was Sent"
-_HS_CACHE_TTL   = 900  # seconds (15 min)
-_HS_PLACEHOLDERS = {"{{campaign.name}}", "{{ad.name}}", ""}
+_HS_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxVmtRyJiFex9yQMPDsk6ivMY3f6clHHe0mdEBnxMxiP02yWoaBzGTmv5-8yxopexOs/exec"
+_HS_MB_DATE_COL    = "Date entered \"Meeting Scheduled (Placements — Inbound Sales Stage)\""
+_HS_MH_COL         = "Initial Meeting Outcome"   # non-empty = meeting was held
+_HS_EL_SENT_COL    = "Date Engagement Letter Was Sent"
+_HS_EL_SIGNED_COL  = "Date entered \"Closed Won (Placements — Inbound Sales Stage)\""
+_HS_CACHE_TTL      = 900  # seconds (15 min)
+_HS_PLACEHOLDERS   = {"{{campaign.name}}", "{{ad.name}}", ""}
 
 _hs_mem: dict = {"contacts": [], "loaded_at": 0.0}
 
@@ -827,23 +827,24 @@ def _clean_utm(val: str) -> str:
     return "" if val in _HS_PLACEHOLDERS else val
 
 def _fetch_hs_contacts() -> list:
-    """Download MB sheet from Google Sheets and return parsed contacts list."""
-    url = _HS_SHEET_BASE + _HS_GID_MB
-    with urllib.request.urlopen(url, timeout=20) as resp:
-        content = resp.read().decode("utf-8")
+    """Fetch MB data from Apps Script JSON endpoint and return parsed contacts list."""
+    import httpx as _httpx
+    r = _httpx.get(_HS_APPS_SCRIPT_URL, follow_redirects=True, timeout=30)
+    rows = r.json()
     contacts = []
-    reader = csv.DictReader(io.StringIO(content))
-    for row in reader:
-        raw_date = (row.get(_HS_MB_DATE_COL, "") or row.get("Create Date", "")).strip()
+    for row in rows:
+        raw_date = (str(row.get(_HS_MB_DATE_COL, "") or "").strip()
+                    or str(row.get("Create Date", "") or "").strip())
         date = raw_date[:10]
         if not date or len(date) < 10:
             continue
-        email       = row.get("Email", "").strip().lower()
-        mql_val     = row.get("MQL", "").strip()
-        sql_val     = row.get("SQL", "").strip()
-        attribution = row.get("Attribution (Contact-Level)", "").strip() or "(unknown)"
-        mh          = bool(row.get(_HS_MH_COL, "").strip())
-        el_sent     = bool(row.get(_HS_EL_SENT_COL, "").strip())
+        email       = str(row.get("Email", "") or "").strip().lower()
+        mql_val     = str(row.get("MQL", "") or "").strip()
+        sql_val     = str(row.get("SQL", "") or "").strip()
+        attribution = str(row.get("Attribution (Contact-Level)", "") or "").strip() or "(unknown)"
+        mh          = bool(str(row.get(_HS_MH_COL, "") or "").strip())
+        el_sent     = bool(str(row.get(_HS_EL_SENT_COL, "") or "").strip())
+        el_signed   = bool(str(row.get(_HS_EL_SIGNED_COL, "") or "").strip())
         contacts.append({
             "date":         date,
             "email":        email,
@@ -851,10 +852,11 @@ def _fetch_hs_contacts() -> list:
             "sql":          sql_val == "Yes",
             "mh":           mh,
             "el_sent":      el_sent,
+            "el_signed":    el_signed,
             "attribution":  attribution,
-            "utm_source":   _clean_utm(row.get("utm_source",   "")) or "",
-            "utm_campaign": _clean_utm(row.get("utm_campaign", "")) or "(no utm_campaign)",
-            "utm_content":  _clean_utm(row.get("utm_content",  "")) or "(no utm_content)",
+            "utm_source":   _clean_utm(str(row.get("utm_source",   "") or "")) or "",
+            "utm_campaign": _clean_utm(str(row.get("utm_campaign", "") or "")) or "(no utm_campaign)",
+            "utm_content":  _clean_utm(str(row.get("utm_content",  "") or "")) or "(no utm_content)",
         })
     contacts.sort(key=lambda x: x["date"])
     return contacts
@@ -894,28 +896,29 @@ async def api_executive_funnel(preset: str = "this_month", since: str = None, un
     )
     contacts = _load_hs_contacts(d_since, d_until, mkt_only=True)
 
-    mb      = len(contacts)
-    mql     = sum(1 for c in contacts if c.get("mql"))
-    mh      = sum(1 for c in contacts if c.get("mh"))
-    sql     = sum(1 for c in contacts if c.get("sql"))
-    el_sent = sum(1 for c in contacts if c.get("el_sent"))
+    mb        = len(contacts)
+    mql       = sum(1 for c in contacts if c.get("mql"))
+    mh        = sum(1 for c in contacts if c.get("mh"))
+    sql       = sum(1 for c in contacts if c.get("sql"))
+    el_sent   = sum(1 for c in contacts if c.get("el_sent"))
+    el_signed = sum(1 for c in contacts if c.get("el_signed"))
 
     def _pct_of_mb(num):
         return round(num / mb * 100, 1) if mb else None
 
     stages = [
-        {"stage": "Meeting Booked (MB)", "count": mb,      "conv_from_mb": None},
-        {"stage": "MQL",                 "count": mql,     "conv_from_mb": _pct_of_mb(mql)},
-        {"stage": "Meeting Held (MH)",   "count": mh,      "conv_from_mb": _pct_of_mb(mh)},
-        {"stage": "SQL",                 "count": sql,     "conv_from_mb": _pct_of_mb(sql)},
-        {"stage": "EL Sent",             "count": el_sent, "conv_from_mb": _pct_of_mb(el_sent)},
-        {"stage": "EL Signed",           "count": None,    "conv_from_mb": None},
+        {"stage": "Meeting Booked (MB)", "count": mb,        "conv_from_mb": None},
+        {"stage": "MQL",                 "count": mql,       "conv_from_mb": _pct_of_mb(mql)},
+        {"stage": "Meeting Held (MH)",   "count": mh,        "conv_from_mb": _pct_of_mb(mh)},
+        {"stage": "SQL",                 "count": sql,       "conv_from_mb": _pct_of_mb(sql)},
+        {"stage": "EL Sent",             "count": el_sent,   "conv_from_mb": _pct_of_mb(el_sent)},
+        {"stage": "EL Signed",           "count": el_signed, "conv_from_mb": _pct_of_mb(el_signed)},
     ]
 
     return JSONResponse({
         "since": d_since, "until": d_until,
         "stages": stages,
-        "totals": {"mb": mb, "mql": mql, "mh": mh, "sql": sql, "el_sent": el_sent},
+        "totals": {"mb": mb, "mql": mql, "mh": mh, "sql": sql, "el_sent": el_sent, "el_signed": el_signed},
     })
 
 
@@ -956,7 +959,7 @@ async def api_executive_spend(preset: str = "this_month", since: str = None, unt
     channels: dict = {}
     def _ensure(key):
         if key not in channels:
-            channels[key] = {"mb": 0, "mql": 0, "mh": 0, "sql": 0, "el_sent": 0}
+            channels[key] = {"mb": 0, "mql": 0, "mh": 0, "sql": 0, "el_sent": 0, "el_signed": 0}
         return channels[key]
 
     for c in contacts:
@@ -966,53 +969,57 @@ async def api_executive_spend(preset: str = "this_month", since: str = None, unt
         if c.get("mql"):     channels[ch]["mql"]     += 1
         if c.get("mh"):      channels[ch]["mh"]      += 1
         if c.get("sql"):     channels[ch]["sql"]      += 1
-        if c.get("el_sent"): channels[ch]["el_sent"]  += 1
+        if c.get("el_sent"):   channels[ch]["el_sent"]   += 1
+        if c.get("el_signed"): channels[ch]["el_signed"] += 1
 
     def _cost(spend, count):
         return round(spend / count, 2) if count else None
 
     def _row(label, spend, ch_key, sub=False):
-        d = channels.get(ch_key, {"mb": 0, "mql": 0, "mh": 0, "sql": 0, "el_sent": 0})
-        mb, mql, mh, sql, el_sent = d["mb"], d["mql"], d["mh"], d["sql"], d["el_sent"]
+        d = channels.get(ch_key, {"mb": 0, "mql": 0, "mh": 0, "sql": 0, "el_sent": 0, "el_signed": 0})
+        mb, mql, mh, sql = d["mb"], d["mql"], d["mh"], d["sql"]
+        el_sent, el_signed = d["el_sent"], d["el_signed"]
         return {
             "channel": label,
             "sub": sub,
             "spend": spend,
-            "mb":      mb,      "cpmb":          _cost(spend, mb)      if spend else None,
-            "mql":     mql,     "cpmql":         _cost(spend, mql)     if spend else None,
-            "mh":      mh,      "cpmh":          _cost(spend, mh)      if spend else None,
-            "sql":     sql,     "cpsql":         _cost(spend, sql)     if spend else None,
-            "el_sent": el_sent, "cost_el_sent":  _cost(spend, el_sent) if spend else None,
-            "el_signed": None,  "cost_el_signed": None,
+            "mb":        mb,        "cpmb":           _cost(spend, mb)        if spend else None,
+            "mql":       mql,       "cpmql":          _cost(spend, mql)       if spend else None,
+            "mh":        mh,        "cpmh":           _cost(spend, mh)        if spend else None,
+            "sql":       sql,       "cpsql":          _cost(spend, sql)       if spend else None,
+            "el_sent":   el_sent,   "cost_el_sent":   _cost(spend, el_sent)   if spend else None,
+            "el_signed": el_signed, "cost_el_signed": _cost(spend, el_signed) if spend else None,
         }
 
     # Total MKT funnel counts (same source as Panel 1.1)
-    total_mb      = sum(1 for c in contacts)
-    total_mql     = sum(1 for c in contacts if c.get("mql"))
-    total_mh      = sum(1 for c in contacts if c.get("mh"))
-    total_sql     = sum(1 for c in contacts if c.get("sql"))
-    total_el_sent = sum(1 for c in contacts if c.get("el_sent"))
+    total_mb        = sum(1 for c in contacts)
+    total_mql       = sum(1 for c in contacts if c.get("mql"))
+    total_mh        = sum(1 for c in contacts if c.get("mh"))
+    total_sql       = sum(1 for c in contacts if c.get("sql"))
+    total_el_sent   = sum(1 for c in contacts if c.get("el_sent"))
+    total_el_signed = sum(1 for c in contacts if c.get("el_signed"))
 
     # Meta-attributed counts for the Meta Ads row
-    _zero = {"mb":0,"mql":0,"mh":0,"sql":0,"el_sent":0}
+    _zero = {"mb":0,"mql":0,"mh":0,"sql":0,"el_sent":0,"el_signed":0}
     meta_onsite    = channels.get("meta_onsite",    _zero)
     meta_callingly = channels.get("meta_callingly", _zero)
-    meta_mb      = meta_onsite["mb"]      + meta_callingly["mb"]
-    meta_mql     = meta_onsite["mql"]     + meta_callingly["mql"]
-    meta_mh      = meta_onsite["mh"]      + meta_callingly["mh"]
-    meta_sql     = meta_onsite["sql"]     + meta_callingly["sql"]
-    meta_el_sent = meta_onsite["el_sent"] + meta_callingly["el_sent"]
+    meta_mb        = meta_onsite["mb"]        + meta_callingly["mb"]
+    meta_mql       = meta_onsite["mql"]       + meta_callingly["mql"]
+    meta_mh        = meta_onsite["mh"]        + meta_callingly["mh"]
+    meta_sql       = meta_onsite["sql"]       + meta_callingly["sql"]
+    meta_el_sent   = meta_onsite["el_sent"]   + meta_callingly["el_sent"]
+    meta_el_signed = meta_onsite["el_signed"] + meta_callingly["el_signed"]
 
     rows = [
         {
             "channel": "Meta Ads", "sub": False,
             "spend": meta_spend,
-            "mb":      meta_mb,      "cpmb":         _cost(meta_spend, meta_mb),
-            "mql":     meta_mql,     "cpmql":        _cost(meta_spend, meta_mql),
-            "mh":      meta_mh,      "cpmh":         _cost(meta_spend, meta_mh),
-            "sql":     meta_sql,     "cpsql":        _cost(meta_spend, meta_sql),
-            "el_sent": meta_el_sent, "cost_el_sent": _cost(meta_spend, meta_el_sent),
-            "el_signed": None, "cost_el_signed": None,
+            "mb":        meta_mb,        "cpmb":           _cost(meta_spend, meta_mb),
+            "mql":       meta_mql,       "cpmql":          _cost(meta_spend, meta_mql),
+            "mh":        meta_mh,        "cpmh":           _cost(meta_spend, meta_mh),
+            "sql":       meta_sql,       "cpsql":          _cost(meta_spend, meta_sql),
+            "el_sent":   meta_el_sent,   "cost_el_sent":   _cost(meta_spend, meta_el_sent),
+            "el_signed": meta_el_signed, "cost_el_signed": _cost(meta_spend, meta_el_signed),
         },
         _row(">> On-Site/Conversion",       spend_onsite,    "meta_onsite",    sub=True),
         _row(">> Instant Form (Callingly)", spend_callingly, "meta_callingly", sub=True),
@@ -1032,8 +1039,8 @@ async def api_executive_spend(preset: str = "this_month", since: str = None, unt
         "mql":     total_mql,     "cpmql":        _cost(meta_spend, total_mql),
         "mh":      total_mh,      "cpmh":         _cost(meta_spend, total_mh),
         "sql":     total_sql,     "cpsql":        _cost(meta_spend, total_sql),
-        "el_sent": total_el_sent, "cost_el_sent": _cost(meta_spend, total_el_sent),
-        "el_signed": None, "cost_el_signed": None,
+        "el_sent":   total_el_sent,   "cost_el_sent":   _cost(meta_spend, total_el_sent),
+        "el_signed": total_el_signed, "cost_el_signed": _cost(meta_spend, total_el_signed),
     })
 
     return JSONResponse({
