@@ -818,6 +818,15 @@ _hs_mem:    dict = {"contacts": [], "loaded_at": 0.0}   # MB tab
 _hs_nl_mem: dict = {"contacts": [], "loaded_at": 0.0}   # New Leads tab
 _hs_mh_mem: dict = {"contacts": [], "loaded_at": 0.0}   # MH tab
 
+def _normalize_meta_attr(attr: str, utm_campaign: str) -> str:
+    """Split generic 'Meta Ads' (and Facebook variants) into Callingly vs On-site/Conversion."""
+    a = attr.lower()
+    if "meta" in a or "facebook" in a:
+        if "instant" in utm_campaign.lower():
+            return "Meta Ads - Callingly/Instant Forms"
+        return "Meta Ads - On-site/Conversion"
+    return attr
+
 def _clean_utm(val: str) -> str:
     if not val:
         return ""
@@ -859,9 +868,11 @@ def _fetch_hs_contacts() -> list:
                                or str(row.get("Create Date", "") or "").strip())
         if not date or len(date) < 10:
             continue
-        mql_val = str(row.get("MQL", "") or "").strip()
-        sql_val = str(row.get("SQL", "") or "").strip()
-        attribution = str(row.get("Attribution (Contact-Level)", "") or "").strip() or "(unknown)"
+        mql_val     = str(row.get("MQL", "") or "").strip()
+        sql_val     = str(row.get("SQL", "") or "").strip()
+        utm_campaign = _clean_utm(str(row.get("utm_campaign", "") or "")) or "(no utm_campaign)"
+        raw_attr    = str(row.get("Attribution (Contact-Level)", "") or "").strip() or "(unknown)"
+        attribution = _normalize_meta_attr(raw_attr, utm_campaign)
         contacts.append({
             "date":         date,
             "email":        str(row.get("Email", "") or "").strip().lower(),
@@ -870,9 +881,9 @@ def _fetch_hs_contacts() -> list:
             "el_sent":      _truthy(row.get(_HS_EL_SENT_COL, "")),
             "el_signed":    _truthy(row.get(_HS_EL_SIGNED_COL, "")),
             "attribution":  attribution,
-            "utm_source":   _clean_utm(str(row.get("utm_source",   "") or "")) or "",
-            "utm_campaign": _clean_utm(str(row.get("utm_campaign", "") or "")) or "(no utm_campaign)",
-            "utm_content":  _clean_utm(str(row.get("utm_content",  "") or "")) or "(no utm_content)",
+            "utm_source":   _clean_utm(str(row.get("utm_source",  "") or "")) or "",
+            "utm_campaign": utm_campaign,
+            "utm_content":  _clean_utm(str(row.get("utm_content", "") or "")) or "(no utm_content)",
         })
     contacts.sort(key=lambda x: x["date"])
     return contacts
@@ -886,14 +897,16 @@ def _fetch_hs_new_leads() -> list:
         date = _parse_hs_date(str(row.get("Create Date", "") or ""))
         if not date or len(date) < 10:
             continue
-        attribution = str(row.get("Attribution (Contact-Level)", "") or "").strip() or "(unknown)"
+        utm_campaign = _clean_utm(str(row.get("utm_campaign", "") or "")) or "(no utm_campaign)"
+        raw_attr    = str(row.get("Attribution (Contact-Level)", "") or "").strip() or "(unknown)"
+        attribution = _normalize_meta_attr(raw_attr, utm_campaign)
         contacts.append({
             "date":         date,
             "email":        str(row.get("Email", "") or "").strip().lower(),
             "attribution":  attribution,
-            "utm_source":   _clean_utm(str(row.get("utm_source",   "") or "")) or "",
-            "utm_campaign": _clean_utm(str(row.get("utm_campaign", "") or "")) or "(no utm_campaign)",
-            "utm_content":  _clean_utm(str(row.get("utm_content",  "") or "")) or "(no utm_content)",
+            "utm_source":   _clean_utm(str(row.get("utm_source",  "") or "")) or "",
+            "utm_campaign": utm_campaign,
+            "utm_content":  _clean_utm(str(row.get("utm_content", "") or "")) or "(no utm_content)",
         })
     contacts.sort(key=lambda x: x["date"])
     return contacts
@@ -910,11 +923,14 @@ def _fetch_hs_mh() -> list:
         outcome = str(row.get("Meeting outcome", "") or "").strip()
         if outcome in {"No Show", "(No value)"}:
             continue
-        attribution = str(row.get("Attribution (Contact-Level)", "") or "").strip() or "(unknown)"
+        utm_campaign = _clean_utm(str(row.get("utm_campaign", "") or "")) or "(no utm_campaign)"
+        raw_attr    = str(row.get("Attribution (Contact-Level)", "") or "").strip() or "(unknown)"
+        attribution = _normalize_meta_attr(raw_attr, utm_campaign)
         contacts.append({
             "date":        date,
             "email":       str(row.get("Email", "") or "").strip().lower(),
             "attribution": attribution,
+            "utm_campaign": utm_campaign,
         })
     contacts.sort(key=lambda x: x["date"])
     return contacts
