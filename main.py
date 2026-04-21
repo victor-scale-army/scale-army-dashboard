@@ -1053,7 +1053,8 @@ async def api_executive_spend(preset: str = "this_month", since: str = None, unt
     spend_callingly  = round(spend_callingly, 2)
 
     # ── HubSpot funnel by channel ─────────────────────────────────────────────
-    contacts = _load_hs_contacts(d_since, d_until, mkt_only=True)
+    contacts    = _load_hs_contacts(d_since, d_until, mkt_only=True)
+    mh_contacts = _load_hs_mh(d_since, d_until, mkt_only=True)
 
     # Accumulators per channel key
     channels: dict = {}
@@ -1066,11 +1067,16 @@ async def api_executive_spend(preset: str = "this_month", since: str = None, unt
         ch = _attr_channel(c.get("attribution", ""), c.get("utm_campaign", ""))
         _ensure(ch)
         channels[ch]["mb"]  += 1
-        if c.get("mql"):     channels[ch]["mql"]     += 1
-        if c.get("mh"):      channels[ch]["mh"]      += 1
-        if c.get("sql"):     channels[ch]["sql"]      += 1
-        if c.get("el_sent"):   channels[ch]["el_sent"]   += 1
-        if c.get("el_signed"): channels[ch]["el_signed"] += 1
+        if c.get("mql"):       channels[ch]["mql"]      += 1
+        if c.get("sql"):       channels[ch]["sql"]      += 1
+        if c.get("el_sent"):   channels[ch]["el_sent"]  += 1
+        if c.get("el_signed"): channels[ch]["el_signed"]+= 1
+
+    # MH from dedicated tab (dated by meeting start time)
+    for c in mh_contacts:
+        ch = _attr_channel(c.get("attribution", ""), c.get("utm_campaign", ""))
+        _ensure(ch)
+        channels[ch]["mh"] += 1
 
     def _cost(spend, count):
         return round(spend / count, 2) if count else None
@@ -1092,9 +1098,9 @@ async def api_executive_spend(preset: str = "this_month", since: str = None, unt
         }
 
     # Total MKT funnel counts (same source as Panel 1.1)
-    total_mb        = sum(1 for c in contacts)
+    total_mb        = len(contacts)
     total_mql       = sum(1 for c in contacts if c.get("mql"))
-    total_mh        = sum(1 for c in contacts if c.get("mh"))
+    total_mh        = len(mh_contacts)
     total_sql       = sum(1 for c in contacts if c.get("sql"))
     total_el_sent   = sum(1 for c in contacts if c.get("el_sent"))
     total_el_signed = sum(1 for c in contacts if c.get("el_signed"))
