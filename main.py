@@ -1074,6 +1074,33 @@ async def api_executive_spend(preset: str = "this_month", since: str = None, unt
     })
 
 
+@app.get("/api/executive/attribution")
+async def api_executive_attribution(preset: str = "this_month", since: str = None, until: str = None):
+    """Panel 1.3 — New Leads per MKT Attribution. Groups MB contacts by raw attribution field."""
+    d_since, d_until, _, _ = _compute_period(
+        preset if not (since and until) else None, since, until
+    )
+    contacts = _load_hs_contacts(d_since, d_until, mkt_only=False)
+
+    counts: dict = {}
+    for c in contacts:
+        attr = c.get("attribution", "(unknown)") or "(unknown)"
+        counts[attr] = counts.get(attr, 0) + 1
+
+    total = len(contacts)
+    rows = sorted(
+        [{"attribution": k, "count": v, "pct": round(v / total * 100, 1) if total else 0}
+         for k, v in counts.items()],
+        key=lambda x: -x["count"]
+    )
+
+    return JSONResponse({
+        "since": d_since, "until": d_until,
+        "total": total,
+        "rows": rows,
+    })
+
+
 @app.get("/api/debug/hs-columns")
 async def api_debug_hs_columns():
     """Returns all column names from the MB sheet — for debugging mismatches."""

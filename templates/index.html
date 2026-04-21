@@ -356,6 +356,12 @@
       <div id="execSpendContent"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
     </div>
 
+    <!-- Panel 1.3 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+      <div id="pt-13" contenteditable="true" spellcheck="false" style="font-size:.9rem;font-weight:600;margin-bottom:16px;outline:none;cursor:text;border-bottom:1px dashed transparent;" onmouseover="this.style.borderBottomColor='var(--border)'" onmouseout="this.style.borderBottomColor='transparent'" title="Click to edit">New Leads per MKT Attribution</div>
+      <div id="execAttrContent"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
+    </div>
+
   </div>
 
   <!-- ── Meta Ads view ───────────────────────────────────────────────────── -->
@@ -1578,7 +1584,7 @@ let execPreset = 'this_month';
 let execCustomSince = null, execCustomUntil = null;
 
 // ── Editable panel titles (localStorage persistence) ─────────────────────────
-const EDITABLE_IDS = ['pt-11','pt-12'];
+const EDITABLE_IDS = ['pt-11','pt-12','pt-13'];
 function initEditableTitles() {
   EDITABLE_IDS.forEach(id => {
     const el = document.getElementById(id);
@@ -1618,16 +1624,19 @@ function setExecPreset(btn) {
 async function loadExec() {
   document.getElementById('execFunnelContent').innerHTML = '<div style="color:var(--muted);font-size:.82rem;">Loading…</div>';
   document.getElementById('execSpendContent').innerHTML  = '<div style="color:var(--muted);font-size:.82rem;">Loading…</div>';
+  document.getElementById('execAttrContent').innerHTML   = '<div style="color:var(--muted);font-size:.82rem;">Loading…</div>';
   const params = (execCustomSince && execCustomUntil)
     ? `since=${execCustomSince}&until=${execCustomUntil}`
     : `preset=${execPreset}`;
   try {
-    const [fr, sr] = await Promise.all([
+    const [fr, sr, ar] = await Promise.all([
       fetch(`/api/executive/funnel?${params}`).then(r => r.json()),
       fetch(`/api/executive/spend?${params}`).then(r => r.json()),
+      fetch(`/api/executive/attribution?${params}`).then(r => r.json()),
     ]);
     renderExecFunnel(fr);
     renderExecSpend(sr);
+    renderExecAttribution(ar);
   } catch(e) {
     document.getElementById('execFunnelContent').innerHTML = `<span style="color:#f87171">${e.message}</span>`;
   }
@@ -1702,6 +1711,88 @@ function renderExecSpend(data) {
   });
   html += '</tbody></table></div>';
   document.getElementById('execSpendContent').innerHTML = html;
+}
+
+let _attrChart = null;
+function renderExecAttribution(data) {
+  const rows  = data.rows || [];
+  const total = data.total || 0;
+
+  if (!rows.length) {
+    document.getElementById('execAttrContent').innerHTML = '<div style="color:var(--muted);font-size:.82rem;">No data for this period.</div>';
+    return;
+  }
+
+  // ── Table ──────────────────────────────────────────────────────────────────
+  const thS = 'font-size:.68rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:7px 12px;border-bottom:1px solid var(--border);white-space:nowrap;';
+  const tdS = 'padding:8px 12px;border-bottom:1px solid var(--border);font-size:.83rem;white-space:nowrap;';
+  let tbl = `<table style="border-collapse:collapse;width:100%;max-width:620px;">
+    <thead><tr>
+      <th style="${thS}text-align:left;">Attribution</th>
+      <th style="${thS}text-align:right;">Leads</th>
+      <th style="${thS}text-align:right;">% of Total</th>
+    </tr></thead><tbody>`;
+  rows.forEach(r => {
+    tbl += `<tr>
+      <td style="${tdS}">${r.attribution}</td>
+      <td style="${tdS}text-align:right;font-weight:600;">${r.count.toLocaleString()}</td>
+      <td style="${tdS}text-align:right;color:var(--accent);">${r.pct}%</td>
+    </tr>`;
+  });
+  tbl += `<tr style="font-weight:700;border-top:2px solid var(--border);">
+    <td style="${tdS}color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;">Total</td>
+    <td style="${tdS}text-align:right;">${total.toLocaleString()}</td>
+    <td style="${tdS}text-align:right;">100%</td>
+  </tr>`;
+  tbl += '</tbody></table>';
+
+  // ── Chart ──────────────────────────────────────────────────────────────────
+  const canvasId = 'attrBarChart';
+  const chartHtml = `<canvas id="${canvasId}" style="max-height:${Math.min(rows.length * 36 + 40, 480)}px;"></canvas>`;
+
+  document.getElementById('execAttrContent').innerHTML =
+    `<div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;">
+       <div style="flex:0 0 auto;">${tbl}</div>
+       <div style="flex:1;min-width:280px;align-self:center;">${chartHtml}</div>
+     </div>`;
+
+  if (_attrChart) { _attrChart.destroy(); _attrChart = null; }
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  _attrChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.attribution),
+      datasets: [{
+        data: rows.map(r => r.count),
+        backgroundColor: 'rgba(255,120,40,0.75)',
+        borderColor:     'rgba(255,120,40,1)',
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.x.toLocaleString()} leads (${rows[ctx.dataIndex].pct}%)`
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#888', font: { size: 11 } },
+          grid:  { color: 'rgba(255,255,255,.06)' },
+        },
+        y: {
+          ticks: { color: '#ccc', font: { size: 11 } },
+          grid:  { display: false },
+        }
+      }
+    }
+  });
 }
 
 // ── Executive date range picker (edr*) ───────────────────────────────────────
