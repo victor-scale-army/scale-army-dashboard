@@ -826,6 +826,23 @@ def _clean_utm(val: str) -> str:
     val = val.strip()
     return "" if val in _HS_PLACEHOLDERS else val
 
+def _parse_hs_date(val: str) -> str:
+    """Convert any HubSpot date string to YYYY-MM-DD. Returns '' if unparseable."""
+    import datetime as _dt
+    val = str(val or "").strip()
+    if not val:
+        return ""
+    # Already YYYY-MM-DD
+    if len(val) >= 10 and val[4] == "-" and val[7] == "-":
+        return val[:10]
+    # Apps Script JS date: "Sun Nov 02 2025 00:52:00 GMT-0300 (...)"
+    try:
+        return _dt.datetime.strptime(val[:24], "%a %b %d %Y %H:%M:%S").strftime("%Y-%m-%d")
+    except Exception:
+        pass
+    # Fallback: grab first 10 chars if they look like a date
+    return val[:10] if len(val) >= 10 else ""
+
 def _fetch_hs_contacts() -> list:
     """Fetch MB data from Apps Script JSON endpoint and return parsed contacts list."""
     import httpx as _httpx
@@ -835,7 +852,7 @@ def _fetch_hs_contacts() -> list:
     for row in rows:
         raw_date = (str(row.get(_HS_MB_DATE_COL, "") or "").strip()
                     or str(row.get("Create Date", "") or "").strip())
-        date = raw_date[:10]
+        date = _parse_hs_date(raw_date)
         if not date or len(date) < 10:
             continue
         email       = str(row.get("Email", "") or "").strip().lower()
