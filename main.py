@@ -1043,6 +1043,31 @@ async def api_executive_spend(preset: str = "this_month", since: str = None, unt
     })
 
 
+@app.get("/api/debug/hs-columns")
+async def api_debug_hs_columns():
+    """Returns all column names from the MB sheet — for debugging mismatches."""
+    import csv as _csv, io as _io
+    try:
+        import httpx as _httpx
+        r = await _httpx.AsyncClient().get(
+            _HS_SHEET_BASE + _HS_GID_MB,
+            follow_redirects=True, timeout=20
+        )
+        reader = _csv.DictReader(_io.StringIO(r.text))
+        cols = reader.fieldnames or []
+    except Exception as e:
+        return JSONResponse({"error": str(e)})
+    return JSONResponse({
+        "columns": cols,
+        "el_sent_col_expected": _HS_EL_SENT_COL,
+        "el_sent_col_found": _HS_EL_SENT_COL in cols,
+        "mh_col_expected": _HS_MH_COL,
+        "mh_col_found": _HS_MH_COL in cols,
+        "mb_date_col_expected": _HS_MB_DATE_COL,
+        "mb_date_col_found": _HS_MB_DATE_COL in cols,
+    })
+
+
 @app.get("/executive", response_class=HTMLResponse)
 async def executive(request: Request):
     return templates.TemplateResponse("executive.html", {"request": request})
