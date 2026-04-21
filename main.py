@@ -1143,7 +1143,7 @@ async def api_executive_spend(preset: str = "this_month", since: str = None, unt
             "el_sent":   meta_el_sent,   "cost_el_sent":   _cost(meta_spend, meta_el_sent),
             "el_signed": meta_el_signed, "cost_el_signed": _cost(meta_spend, meta_el_signed),
         },
-        _row(">> On-Site/Conversion",       spend_onsite,    "meta_onsite",    sub=True),
+        _row(">> On-Site Conversion",        spend_onsite,    "meta_onsite",    sub=True),
         _row(">> Instant Form (Callingly)", spend_callingly, "meta_callingly", sub=True),
         _row("Google Ads",                 None, "google_paid"),
         _row("Google Search - Organic",    None, "google_organic"),
