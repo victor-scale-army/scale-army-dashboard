@@ -808,13 +808,15 @@ def _attr_channel(attr: str, utm_campaign: str = "") -> str:
 # ── HubSpot live cache (auto-refresh every 15 min) ───────────────────────────
 _HS_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxVmtRyJiFex9yQMPDsk6ivMY3f6clHHe0mdEBnxMxiP02yWoaBzGTmv5-8yxopexOs/exec"
 _HS_MB_DATE_COL    = "Date entered \"Meeting Scheduled (Placements — Inbound Sales Stage)\""
-_HS_MH_COL         = "Initial Meeting Outcome"   # non-empty = meeting was held
 _HS_EL_SENT_COL    = "Date Engagement Letter Was Sent"
 _HS_EL_SIGNED_COL  = "Date entered \"Closed Won (Placements — Inbound Sales Stage)\""
 _HS_CACHE_TTL      = 900  # seconds (15 min)
 _HS_PLACEHOLDERS   = {"{{campaign.name}}", "{{ad.name}}", ""}
 
-_hs_mem: dict = {"contacts": [], "loaded_at": 0.0}
+# Three separate caches — one per sheet tab
+_hs_mem:    dict = {"contacts": [], "loaded_at": 0.0}   # MB tab
+_hs_nl_mem: dict = {"contacts": [], "loaded_at": 0.0}   # New Leads tab
+_hs_mh_mem: dict = {"contacts": [], "loaded_at": 0.0}   # MH tab
 
 def _clean_utm(val: str) -> str:
     if not val:
@@ -832,51 +834,41 @@ def _parse_hs_date(val: str) -> str:
     val = str(val or "").strip()
     if not val:
         return ""
-    # Already YYYY-MM-DD
     if len(val) >= 10 and val[4] == "-" and val[7] == "-":
         return val[:10]
-    # Apps Script JS date: "Sun Nov 02 2025 00:52:00 GMT-0300 (...)"
     try:
         return _dt.datetime.strptime(val[:24], "%a %b %d %Y %H:%M:%S").strftime("%Y-%m-%d")
     except Exception:
         pass
-    # Fallback: grab first 10 chars if they look like a date
     return val[:10] if len(val) >= 10 else ""
 
+def _truthy(v) -> bool:
+    s = str(v or "").strip()
+    return bool(s) and s != "(No value)"
+
+def _hs_url(sheet: str) -> str:
+    return f"{_HS_APPS_SCRIPT_URL}?sheet={sheet}"
+
 def _fetch_hs_contacts() -> list:
-    """Fetch MB data from Apps Script JSON endpoint and return parsed contacts list."""
+    """Fetch MB tab — one row per Meeting Booked contact."""
     import httpx as _httpx
-    r = _httpx.get(_HS_APPS_SCRIPT_URL, follow_redirects=True, timeout=30)
-    rows = r.json()
+    rows = _httpx.get(_hs_url("mb"), follow_redirects=True, timeout=30).json()
     contacts = []
     for row in rows:
-        raw_date = (str(row.get(_HS_MB_DATE_COL, "") or "").strip()
-                    or str(row.get("Create Date", "") or "").strip())
-        date = _parse_hs_date(raw_date)
+        date = _parse_hs_date(str(row.get(_HS_MB_DATE_COL, "") or "").strip()
+                               or str(row.get("Create Date", "") or "").strip())
         if not date or len(date) < 10:
             continue
-        def _truthy(v):
-            """HubSpot exports empty fields as '(No value)' — treat as empty."""
-            s = str(v or "").strip()
-            return bool(s) and s != "(No value)"
-
-        email       = str(row.get("Email", "") or "").strip().lower()
-        mql_val     = str(row.get("MQL", "") or "").strip()
-        sql_val     = str(row.get("SQL", "") or "").strip()
+        mql_val = str(row.get("MQL", "") or "").strip()
+        sql_val = str(row.get("SQL", "") or "").strip()
         attribution = str(row.get("Attribution (Contact-Level)", "") or "").strip() or "(unknown)"
-        # MH: meeting was held = outcome exists and is not No Show / (No value)
-        mh_val      = str(row.get(_HS_MH_COL, "") or "").strip()
-        mh          = bool(mh_val) and mh_val not in {"(No value)", "No Show"}
-        el_sent     = _truthy(row.get(_HS_EL_SENT_COL, ""))
-        el_signed   = _truthy(row.get(_HS_EL_SIGNED_COL, ""))
         contacts.append({
             "date":         date,
-            "email":        email,
+            "email":        str(row.get("Email", "") or "").strip().lower(),
             "mql":          mql_val == "Yes",
             "sql":          sql_val == "Yes",
-            "mh":           mh,
-            "el_sent":      el_sent,
-            "el_signed":    el_signed,
+            "el_sent":      _truthy(row.get(_HS_EL_SENT_COL, "")),
+            "el_signed":    _truthy(row.get(_HS_EL_SIGNED_COL, "")),
             "attribution":  attribution,
             "utm_source":   _clean_utm(str(row.get("utm_source",   "") or "")) or "",
             "utm_campaign": _clean_utm(str(row.get("utm_campaign", "") or "")) or "(no utm_campaign)",
@@ -885,27 +877,102 @@ def _fetch_hs_contacts() -> list:
     contacts.sort(key=lambda x: x["date"])
     return contacts
 
+def _fetch_hs_new_leads() -> list:
+    """Fetch New Leads tab — all leads by Create Date."""
+    import httpx as _httpx
+    rows = _httpx.get(_hs_url("new_leads"), follow_redirects=True, timeout=30).json()
+    contacts = []
+    for row in rows:
+        date = _parse_hs_date(str(row.get("Create Date", "") or ""))
+        if not date or len(date) < 10:
+            continue
+        attribution = str(row.get("Attribution (Contact-Level)", "") or "").strip() or "(unknown)"
+        contacts.append({
+            "date":         date,
+            "email":        str(row.get("Email", "") or "").strip().lower(),
+            "attribution":  attribution,
+            "utm_source":   _clean_utm(str(row.get("utm_source",   "") or "")) or "",
+            "utm_campaign": _clean_utm(str(row.get("utm_campaign", "") or "")) or "(no utm_campaign)",
+            "utm_content":  _clean_utm(str(row.get("utm_content",  "") or "")) or "(no utm_content)",
+        })
+    contacts.sort(key=lambda x: x["date"])
+    return contacts
+
+def _fetch_hs_mh() -> list:
+    """Fetch MH tab — one row per Meeting Held, dated by Meeting start time."""
+    import httpx as _httpx
+    rows = _httpx.get(_hs_url("mh"), follow_redirects=True, timeout=30).json()
+    contacts = []
+    for row in rows:
+        date = _parse_hs_date(str(row.get("Meeting start time", "") or ""))
+        if not date or len(date) < 10:
+            continue
+        outcome = str(row.get("Meeting outcome", "") or "").strip()
+        if outcome in {"No Show", "(No value)"}:
+            continue
+        attribution = str(row.get("Attribution (Contact-Level)", "") or "").strip() or "(unknown)"
+        contacts.append({
+            "date":        date,
+            "email":       str(row.get("Email", "") or "").strip().lower(),
+            "attribution": attribution,
+        })
+    contacts.sort(key=lambda x: x["date"])
+    return contacts
+
 def _get_hs_contacts() -> list:
-    """Return contacts from memory cache, refreshing from Sheets if stale."""
     now = time.time()
     if now - _hs_mem["loaded_at"] > _HS_CACHE_TTL:
         try:
             _hs_mem["contacts"]  = _fetch_hs_contacts()
             _hs_mem["loaded_at"] = now
         except Exception as e:
-            # Keep stale data if fetch fails; log error
-            print(f"[HS] Sheet fetch failed: {e}")
+            print(f"[HS MB] fetch failed: {e}")
             if not _hs_mem["contacts"]:
-                # Last resort: try reading from local cache file if it exists
                 _hs_cache_path = os.path.join(os.path.dirname(__file__), "hubspot_cache.json")
                 if os.path.exists(_hs_cache_path):
                     with open(_hs_cache_path, "r", encoding="utf-8") as f:
                         _hs_mem["contacts"] = json.load(f).get("contacts", [])
     return _hs_mem["contacts"]
 
+def _get_hs_new_leads() -> list:
+    now = time.time()
+    if now - _hs_nl_mem["loaded_at"] > _HS_CACHE_TTL:
+        try:
+            _hs_nl_mem["contacts"]  = _fetch_hs_new_leads()
+            _hs_nl_mem["loaded_at"] = now
+        except Exception as e:
+            print(f"[HS NL] fetch failed: {e}")
+    return _hs_nl_mem["contacts"]
+
+def _get_hs_mh() -> list:
+    now = time.time()
+    if now - _hs_mh_mem["loaded_at"] > _HS_CACHE_TTL:
+        try:
+            _hs_mh_mem["contacts"]  = _fetch_hs_mh()
+            _hs_mh_mem["loaded_at"] = now
+        except Exception as e:
+            print(f"[HS MH] fetch failed: {e}")
+    return _hs_mh_mem["contacts"]
+
 def _load_hs_contacts(d_since: str, d_until: str, mkt_only: bool = True):
-    """Return contacts filtered by date range and optionally MKT attribution."""
+    """Return MB contacts filtered by date range and optionally MKT attribution."""
     all_c = _get_hs_contacts()
+    result = [c for c in all_c if d_since <= c["date"] <= d_until]
+    if mkt_only:
+        result = [c for c in result if c.get("attribution", "") in MKT_ATTRIBUTIONS]
+    return result
+
+def _load_hs_new_leads(d_since: str, d_until: str, mkt_only: bool = True):
+    """Return New Leads filtered by date range and optionally MKT attribution."""
+    all_c = _get_hs_new_leads()
+    result = [c for c in all_c if d_since <= c["date"] <= d_until]
+    if mkt_only:
+        result = [c for c in result if c.get("attribution", "") in MKT_ATTRIBUTIONS]
+    return result
+
+def _load_hs_mh(d_since: str, d_until: str, mkt_only: bool = True):
+    """Return MH contacts filtered by date range and optionally MKT attribution."""
+    all_c = _get_hs_mh()
     result = [c for c in all_c if d_since <= c["date"] <= d_until]
     if mkt_only:
         result = [c for c in result if c.get("attribution", "") in MKT_ATTRIBUTIONS]
@@ -918,22 +985,27 @@ async def api_executive_funnel(preset: str = "this_month", since: str = None, un
     d_since, d_until, _, _ = _compute_period(
         preset if not (since and until) else None, since, until
     )
-    contacts = _load_hs_contacts(d_since, d_until, mkt_only=True)
 
-    mb        = len(contacts)
-    mql       = sum(1 for c in contacts if c.get("mql"))
-    mh        = sum(1 for c in contacts if c.get("mh"))
-    sql       = sum(1 for c in contacts if c.get("sql"))
-    el_sent   = sum(1 for c in contacts if c.get("el_sent"))
-    el_signed = sum(1 for c in contacts if c.get("el_signed"))
+    nl_contacts = _load_hs_new_leads(d_since, d_until, mkt_only=True)
+    mb_contacts = _load_hs_contacts(d_since, d_until, mkt_only=True)
+    mh_contacts = _load_hs_mh(d_since, d_until, mkt_only=True)
+
+    nl        = len(nl_contacts)
+    mb        = len(mb_contacts)
+    mh        = len(mh_contacts)
+    mql       = sum(1 for c in mb_contacts if c.get("mql"))
+    sql       = sum(1 for c in mb_contacts if c.get("sql"))
+    el_sent   = sum(1 for c in mb_contacts if c.get("el_sent"))
+    el_signed = sum(1 for c in mb_contacts if c.get("el_signed"))
 
     def _pct_of_mb(num):
         return round(num / mb * 100, 1) if mb else None
 
     stages = [
+        {"stage": "New Leads",           "count": nl,        "conv_from_mb": None},
         {"stage": "Meeting Booked (MB)", "count": mb,        "conv_from_mb": None},
-        {"stage": "MQL",                 "count": mql,       "conv_from_mb": _pct_of_mb(mql)},
         {"stage": "Meeting Held (MH)",   "count": mh,        "conv_from_mb": _pct_of_mb(mh)},
+        {"stage": "MQL",                 "count": mql,       "conv_from_mb": _pct_of_mb(mql)},
         {"stage": "SQL",                 "count": sql,       "conv_from_mb": _pct_of_mb(sql)},
         {"stage": "EL Sent",             "count": el_sent,   "conv_from_mb": _pct_of_mb(el_sent)},
         {"stage": "EL Signed",           "count": el_signed, "conv_from_mb": _pct_of_mb(el_signed)},
@@ -942,7 +1014,8 @@ async def api_executive_funnel(preset: str = "this_month", since: str = None, un
     return JSONResponse({
         "since": d_since, "until": d_until,
         "stages": stages,
-        "totals": {"mb": mb, "mql": mql, "mh": mh, "sql": sql, "el_sent": el_sent, "el_signed": el_signed},
+        "totals": {"nl": nl, "mb": mb, "mh": mh, "mql": mql, "sql": sql,
+                   "el_sent": el_sent, "el_signed": el_signed},
     })
 
 
@@ -1076,11 +1149,11 @@ async def api_executive_spend(preset: str = "this_month", since: str = None, unt
 
 @app.get("/api/executive/attribution")
 async def api_executive_attribution(preset: str = "this_month", since: str = None, until: str = None):
-    """Panel 1.3 — New Leads per MKT Attribution. Groups MB contacts by raw attribution field."""
+    """Panel 1.3 — New Leads per MKT Attribution. Groups New Leads tab by attribution field."""
     d_since, d_until, _, _ = _compute_period(
         preset if not (since and until) else None, since, until
     )
-    contacts = _load_hs_contacts(d_since, d_until, mkt_only=False)
+    contacts = _load_hs_new_leads(d_since, d_until, mkt_only=False)
 
     counts: dict = {}
     for c in contacts:
