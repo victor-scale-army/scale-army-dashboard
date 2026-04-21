@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scale Army — Executive Summary</title>
+<link rel="stylesheet" href="/static/style.css?v=4">
+<style>
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+.exec-wrap   { max-width: 1400px; margin: 0 auto; padding: 24px 28px 60px; }
+.page-title  { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.page-sub    { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+/* ── Date controls ──────────────────────────────────────────────────────── */
+.date-bar    { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+.preset-btn  {
+  padding: 5px 13px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--muted); font-size: 12px; cursor: pointer;
+  transition: all .15s;
+}
+.preset-btn:hover, .preset-btn.active {
+  background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600;
+}
+.date-sep    { color: var(--muted); font-size: 12px; }
+.date-input  {
+  padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font-size: 12px;
+}
+
+/* ── Panels ─────────────────────────────────────────────────────────────── */
+.panel       { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; margin-bottom: 20px; }
+.panel-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.panel-desc  { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+
+/* ── Funnel bars (Panel 1.1) ────────────────────────────────────────────── */
+.funnel-table { width: 100%; border-collapse: collapse; }
+.funnel-table th {
+  font-size: 11px; font-weight: 600; color: var(--muted); text-align: left;
+  padding: 0 12px 8px 0; text-transform: uppercase; letter-spacing: .04em;
+}
+.funnel-table td { padding: 5px 12px 5px 0; vertical-align: middle; }
+.stage-name  { font-size: 13px; color: var(--text); width: 180px; white-space: nowrap; }
+.bar-cell    { width: 100%; }
+.bar-track   { background: var(--border); border-radius: 4px; height: 22px; position: relative; overflow: hidden; }
+.bar-fill    { height: 100%; border-radius: 4px; background: var(--accent); opacity: .85; transition: width .4s ease; }
+.bar-label   { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 600; color: var(--bg); }
+.bar-label.light { color: var(--text); right: auto; left: calc(100% + 8px); }
+.count-cell  { font-size: 15px; font-weight: 700; color: var(--text); width: 70px; text-align: right; white-space: nowrap; }
+.conv-cell   { font-size: 12px; color: var(--muted); width: 80px; text-align: right; white-space: nowrap; }
+.conv-cell span { color: var(--accent); font-weight: 600; }
+.na-cell     { font-size: 13px; color: var(--border); text-align: right; }
+
+/* ── Spend summary table (Panel 1.2) ───────────────────────────────────── */
+.spend-wrap  { overflow-x: auto; }
+.spend-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 900px; }
+.spend-table th {
+  background: var(--bg); color: var(--muted); font-weight: 600; font-size: 11px;
+  text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--border);
+  text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
+}
+.spend-table th:first-child { text-align: left; }
+.spend-table td {
+  padding: 8px 10px; border-bottom: 1px solid var(--border);
+  color: var(--text); text-align: right; white-space: nowrap;
+}
+.spend-table td:first-child { text-align: left; }
+.spend-table tr.sub td:first-child { padding-left: 22px; color: var(--muted); }
+.spend-table tr.total-row td { font-weight: 700; color: var(--accent); border-top: 2px solid var(--border); }
+.spend-table tr:hover td { background: rgba(255,255,255,.03); }
+.metric-val  { }
+.cost-val    { color: var(--muted); font-size: 11px; }
+.na          { color: var(--border); }
+.metric-pair { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+
+/* ── Loading ────────────────────────────────────────────────────────────── */
+.loading { color: var(--muted); font-size: 13px; padding: 20px 0; }
+.error   { color: #f87171; font-size: 13px; padding: 12px 0; }
+</style>
+</head>
+<body>
+<div class="exec-wrap">
+
+  <div class="page-title">Scale Army BI Dashboard</div>
+  <div class="page-sub">TAB 1 — Executive Summary &nbsp;·&nbsp; Source of truth: HubSpot Attribution field (not Source)</div>
+
+  <!-- Date controls -->
+  <div class="date-bar">
+    <button class="preset-btn" data-preset="today">Today</button>
+    <button class="preset-btn" data-preset="last_7d">Last 7d</button>
+    <button class="preset-btn active" data-preset="this_month">This Month</button>
+    <button class="preset-btn" data-preset="last_month">Last Month</button>
+    <button class="preset-btn" data-preset="last_30d">Last 30d</button>
+    <button class="preset-btn" data-preset="all_time">All Time</button>
+    <span class="date-sep">or</span>
+    <input type="date" id="sinceInput" class="date-input">
+    <span class="date-sep">→</span>
+    <input type="date" id="untilInput" class="date-input">
+    <button class="preset-btn" id="applyCustom">Apply</button>
+  </div>
+
+  <!-- Panel 1.1 -->
+  <div class="panel">
+    <div class="panel-title">Panel 1.1 — Funnel Overview (Total MKT)</div>
+    <div class="panel-desc">All contacts filtered to MKT attributions only. Funnel: MB → MQL → MH → SQL → EL Sent → EL Signed</div>
+    <div id="funnelContent"><div class="loading">Loading…</div></div>
+  </div>
+
+  <!-- Panel 1.2 -->
+  <div class="panel">
+    <div class="panel-title">Panel 1.2 — Spend Summary by Channel</div>
+    <div class="panel-desc">Spend from Meta Ads API · All stage counts from HubSpot (attribution-matched)</div>
+    <div id="spendContent"><div class="loading">Loading…</div></div>
+  </div>
+
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let activePreset = 'this_month';
+let customSince = '', customUntil = '';
+
+// ── Render Panel 1.1 ─────────────────────────────────────────────────────────
+function renderFunnel(data) {
+  const stages = data.stages;
+  const maxCount = Math.max(...stages.map(s => s.count || 0), 1);
+
+  let html = `<table class="funnel-table">
+    <colgroup>
+      <col style="width:180px">
+      <col style="width:100%">
+      <col style="width:70px">
+      <col style="width:100px">
+    </colgroup>
+    <thead><tr>
+      <th>Stage</th><th>Volume</th><th style="text-align:right">Count</th><th style="text-align:right">Conv. from prev</th>
+    </tr></thead><tbody>`;
+
+  stages.forEach(s => {
+    const pct = s.count != null ? (s.count / maxCount * 100) : 0;
+    const barFill = s.count != null
+      ? `<div class="bar-fill" style="width:${pct}%">
+           ${pct > 15 ? `<span class="bar-label">${s.count.toLocaleString()}</span>` : ''}
+         </div>`
+      : '';
+    const countHtml = s.count != null
+      ? `<span class="metric-val">${s.count.toLocaleString()}</span>`
+      : `<span class="na">—</span>`;
+    const convHtml = s.conv_from_prev != null
+      ? `<span>${s.conv_from_prev}%</span>`
+      : `<span class="na">—</span>`;
+
+    html += `<tr>
+      <td class="stage-name">${s.stage}</td>
+      <td class="bar-cell"><div class="bar-track">${barFill}</div></td>
+      <td class="count-cell">${countHtml}</td>
+      <td class="conv-cell">${convHtml}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('funnelContent').innerHTML = html;
+}
+
+// ── Render Panel 1.2 ─────────────────────────────────────────────────────────
+function fmt(val) {
+  if (val == null) return '<span class="na">—</span>';
+  if (typeof val === 'number') return val.toLocaleString();
+  return val;
+}
+function fmtMoney(val) {
+  if (val == null) return '<span class="na">—</span>';
+  return '$' + val.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtCost(val) {
+  if (val == null) return '';
+  return '<span class="cost-val">$' + val.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + '</span>';
+}
+
+function renderSpend(data) {
+  const rows = data.rows;
+  let html = `<div class="spend-wrap"><table class="spend-table">
+  <thead><tr>
+    <th>Channel</th>
+    <th>Spend</th>
+    <th>MB</th><th>CPMB</th>
+    <th>MQL</th><th>CPQL</th>
+    <th>MH</th><th>CPMH</th>
+    <th>SQL</th><th>CPSQL</th>
+    <th>EL Sent</th><th>Cost/EL Sent</th>
+    <th>EL Signed</th><th>Cost/EL Signed</th>
+  </tr></thead><tbody>`;
+
+  rows.forEach(r => {
+    const cls = r.sub ? 'sub' : (r.total ? 'total-row' : '');
+    html += `<tr class="${cls}">
+      <td>${r.channel}</td>
+      <td>${fmtMoney(r.spend)}</td>
+      <td>${fmt(r.mb)}</td><td>${fmtCost(r.cpmb)}</td>
+      <td>${fmt(r.mql)}</td><td>${fmtCost(r.cpql)}</td>
+      <td>${fmt(r.mh)}</td><td>${fmtCost(r.cpmh)}</td>
+      <td>${fmt(r.sql)}</td><td>${fmtCost(r.cpsql)}</td>
+      <td>${fmt(r.el_sent)}</td><td>${fmt(r.cost_el_sent)}</td>
+      <td>${fmt(r.el_signed)}</td><td>${fmt(r.cost_el_signed)}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  document.getElementById('spendContent').innerHTML = html;
+}
+
+// ── Fetch & refresh ──────────────────────────────────────────────────────────
+async function refresh() {
+  const params = customSince && customUntil
+    ? `since=${customSince}&until=${customUntil}`
+    : `preset=${activePreset}`;
+
+  document.getElementById('funnelContent').innerHTML = '<div class="loading">Loading…</div>';
+  document.getElementById('spendContent').innerHTML  = '<div class="loading">Loading…</div>';
+
+  try {
+    const [funnelRes, spendRes] = await Promise.all([
+      fetch(`/api/executive/funnel?${params}`),
+      fetch(`/api/executive/spend?${params}`),
+    ]);
+    const funnel = await funnelRes.json();
+    const spend  = await spendRes.json();
+    renderFunnel(funnel);
+    renderSpend(spend);
+  } catch(e) {
+    document.getElementById('funnelContent').innerHTML = `<div class="error">Error: ${e.message}</div>`;
+    document.getElementById('spendContent').innerHTML  = `<div class="error">Error: ${e.message}</div>`;
+  }
+}
+
+// ── Event listeners ──────────────────────────────────────────────────────────
+document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activePreset = btn.dataset.preset;
+    customSince = ''; customUntil = '';
+    document.getElementById('sinceInput').value = '';
+    document.getElementById('untilInput').value = '';
+    refresh();
+  });
+});
+
+document.getElementById('applyCustom').addEventListener('click', () => {
+  const s = document.getElementById('sinceInput').value;
+  const u = document.getElementById('untilInput').value;
+  if (s && u) {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    customSince = s; customUntil = u;
+    refresh();
+  }
+});
+
+// Init
+refresh();
+</script>
+</body>
+</html>

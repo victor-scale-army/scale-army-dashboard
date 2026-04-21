@@ -1,25 +1,24 @@
 """
-Builds hubspot_cache.json from HubSpot segment contacts.
+Builds hubspot_cache.json from two Google Sheets tabs:
 
-Architecture: contact-centric (one record per unique contact).
-Each contact = one booked meeting. Classification comes from their actual
-associated deal stage in HubSpot pipeline 793577095.
+  MB sheet (gid=1408761440): All contacts who booked a meeting (source of truth for MB, MQL, SQL)
+  MH sheet (gid=239976551):  Contacts whose meeting was held (used to flag mh=True on MB contacts)
 
-Last refreshed: 2026-04-15 via Claude MCP (HubSpot).
-To refresh: export the "Meetings Booked" segment from HubSpot, paste contacts
-into SEGMENT_CONTACTS below, fetch deal stages via MCP, and re-run this script.
+Funnel order: MB → MQL → MH → SQL
+
+To refresh: just re-run this script. It downloads both sheets live.
 """
-import json
-import datetime
-import urllib.parse
+import csv, io, json, datetime, urllib.request, urllib.parse
 from pathlib import Path
 
 BASE = Path(__file__).parent
 
-# ---------------------------------------------------------------------------
-# Normalise UTM values (URL-decode, strip placeholders)
-# ---------------------------------------------------------------------------
+SHEET_BASE = "https://docs.google.com/spreadsheets/d/1szR5aHU5j1FijE4mBVmlx2A0AsA7-lvocgsbO6UFmCw/export?format=csv&gid="
+GID_MB = "1408761440"
+GID_MH = "239976551"
+
 PLACEHOLDERS = {"{{campaign.name}}", "{{ad.name}}", ""}
+
 
 def clean_utm(val: str) -> str:
     if not val:
@@ -33,106 +32,61 @@ def clean_utm(val: str) -> str:
         return ""
     return val
 
-# ---------------------------------------------------------------------------
-# Segment contacts — source of truth
-# Each entry: contact create date (YYYY-MM-DD), classification
-# (held / no_show / scheduled), utm_campaign, utm_content.
-#
-# Classifications are derived from actual HubSpot deal associations
-# (pipeline 793577095 — "Placements — Inbound Sales Stage").
-#
-# Stage mapping used:
-#   scheduled  → stage 1162444910  (future meeting)
-#   no_show    → stage 1162732907
-#   held       → stages 1162444911 / 1162444912 / 1162444913 / 1162785708 / 1203929600
-# ---------------------------------------------------------------------------
-SEGMENT_CONTACTS = [
-    # ── Pre-April (older contacts with April deals) ─────────────────────────
-    {"date": "2024-10-24", "classification": "scheduled", "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "OM - #05 - Copy"},
-    {"date": "2026-03-06", "classification": "held",      "utm_campaign": "[MARKETING] [SCHEDULES] [76] [MARKETING-TEAMS]",        "utm_content": ""},
-    {"date": "2026-03-29", "classification": "held",      "utm_campaign": "[MARKETING] [INSTANT FORMS] [76] [MARKETING-TEAMS]",    "utm_content": ""},
-    # ── April 1 ─────────────────────────────────────────────────────────────
-    {"date": "2026-04-01", "classification": "scheduled", "utm_campaign": "",                                                      "utm_content": ""},
-    {"date": "2026-04-01", "classification": "scheduled", "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "OM - #05 - Copy"},
-    # ── April 2 ─────────────────────────────────────────────────────────────
-    {"date": "2026-04-02", "classification": "scheduled", "utm_campaign": "",                                                      "utm_content": ""},
-    {"date": "2026-04-02", "classification": "held",      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "OM - #05 - Copy"},
-    {"date": "2026-04-02", "classification": "scheduled", "utm_campaign": "[MARKETING] [INSTANT FORMS] [76] [MARKETING-TEAMS]",    "utm_content": ""},
-    {"date": "2026-04-02", "classification": "held",      "utm_campaign": "[MARKETING] [INSTANT FORMS] [76] [MARKETING-TEAMS]",    "utm_content": ""},
-    {"date": "2026-04-02", "classification": "scheduled", "utm_campaign": "",                                                      "utm_content": ""},
-    {"date": "2026-04-02", "classification": "held",      "utm_campaign": "",                                                      "utm_content": "link_in_bio"},
-    # ── April 3 ─────────────────────────────────────────────────────────────
-    {"date": "2026-04-03", "classification": "scheduled", "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "Jerrica - #02 - https://scalearmy.com/hire-form-smm/"},
-    # ── April 4 ─────────────────────────────────────────────────────────────
-    {"date": "2026-04-04", "classification": "scheduled", "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "OM - #05 - Copy"},
-    {"date": "2026-04-04", "classification": "scheduled", "utm_campaign": "76_Leads_Instant_Form_Lead_Event_Marketing_Teams",       "utm_content": ""},
-    {"date": "2026-04-04", "classification": "scheduled", "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "Jerrica - #02 - scalearmy.com/social-media-manager"},
-    {"date": "2026-04-04", "classification": "no_show",   "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "OM - #05 - Copy"},
-    {"date": "2026-04-04", "classification": "scheduled", "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "Jerrica - #02 - https://scalearmy.com/hire-form-smm/"},
-    # ── April 5 ─────────────────────────────────────────────────────────────
-    {"date": "2026-04-05", "classification": "scheduled", "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "Jerrica - #02 - https://scalearmy.com/hire-form-smm/"},
-    # ── April 6 ─────────────────────────────────────────────────────────────
-    {"date": "2026-04-06", "classification": "scheduled", "utm_campaign": "",                                                      "utm_content": ""},
-    {"date": "2026-04-06", "classification": "held",      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "Generic Nate - #01"},
-    # ── April 7 ─────────────────────────────────────────────────────────────
-    {"date": "2026-04-07", "classification": "held",      "utm_campaign": "76_Leads_Instant_Form_Lead_Event_Marketing_Teams",       "utm_content": ""},
-    {"date": "2026-04-07", "classification": "held",      "utm_campaign": "",                                                      "utm_content": ""},
-    # ── April 8 ─────────────────────────────────────────────────────────────
-    {"date": "2026-04-08", "classification": "scheduled", "utm_campaign": "76_Leads_Instant_Form_Lead_Event_Marketing_Teams",       "utm_content": ""},
-    {"date": "2026-04-08", "classification": "held",      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "OM - #05 - Copy"},
-    {"date": "2026-04-08", "classification": "scheduled", "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "Jerrica - #02 - https://scalearmy.com/hire-form-smm/"},
-    # ── April 9 ─────────────────────────────────────────────────────────────
-    {"date": "2026-04-09", "classification": "no_show",   "utm_campaign": "[MARKETING] [SCHEDULES] [76] [MARKETING-TEAMS]",        "utm_content": "[GENERIC 2 - JANUARY 26]"},
-    {"date": "2026-04-09", "classification": "scheduled", "utm_campaign": "81_Leads_Landing_Page_Schedule_Event_Marketing_Teams",   "utm_content": "AD01_IMG_Wasting_money_Ops_managers"},
-    {"date": "2026-04-09", "classification": "held",      "utm_campaign": "",                                                      "utm_content": ""},
-    {"date": "2026-04-09", "classification": "scheduled", "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "OM - #05 - Copy"},
-    # ── April 10 ────────────────────────────────────────────────────────────
-    {"date": "2026-04-10", "classification": "scheduled", "utm_campaign": "",                                                      "utm_content": ""},
-    {"date": "2026-04-10", "classification": "held",      "utm_campaign": "",                                                      "utm_content": ""},
-    {"date": "2026-04-10", "classification": "held",      "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "Generic Nate - #01"},
-    {"date": "2026-04-10", "classification": "scheduled", "utm_campaign": "",                                                      "utm_content": ""},
-    # ── April 11 ────────────────────────────────────────────────────────────
-    {"date": "2026-04-11", "classification": "no_show",   "utm_campaign": "81_Leads_Landing_Page_Schedule_Event_Marketing_Teams",   "utm_content": "AD01_IMG_Wasting_money_Ops_managers"},
-    {"date": "2026-04-11", "classification": "scheduled", "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "Generic Nate - #01"},
-    # ── April 12 ────────────────────────────────────────────────────────────
-    {"date": "2026-04-12", "classification": "scheduled", "utm_campaign": "76_Leads_Instant_Form_Lead_Event_Marketing_Teams",       "utm_content": ""},
-    {"date": "2026-04-12", "classification": "held",      "utm_campaign": "81_Leads_Landing_Page_Schedule_Event_Marketing_Teams",   "utm_content": "AD01_IMG_Wasting_money_Ops_managers — Cópia"},
-    {"date": "2026-04-12", "classification": "scheduled", "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "OM - #05 - Copy"},
-    # ── April 13 ────────────────────────────────────────────────────────────
-    {"date": "2026-04-13", "classification": "scheduled", "utm_campaign": "",                                                      "utm_content": ""},
-    {"date": "2026-04-13", "classification": "held",      "utm_campaign": "76_Leads_Instant_Form_Lead_Event_Marketing_Teams",       "utm_content": "AD02_VID_Jerrica_80k_year_SMM"},
-    {"date": "2026-04-13", "classification": "scheduled", "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "OM - #05 - Copy"},
-    {"date": "2026-04-13", "classification": "scheduled", "utm_campaign": "81_Leads_Landing_Page_Schedule_Event_Marketing_Teams",   "utm_content": "AD01_IMG_Wasting_money_Ops_managers — Cópia"},
-    {"date": "2026-04-13", "classification": "scheduled", "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "OM - #05 - Copy"},
-    # ── April 14 ────────────────────────────────────────────────────────────
-    {"date": "2026-04-14", "classification": "scheduled", "utm_campaign": "81_Leads_Landing_Page_Schedule_Event_Marketing_Teams",   "utm_content": "AD01_IMG_Wasting_money_Ops_managers — Cópia"},
-    {"date": "2026-04-14", "classification": "scheduled", "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "OM - #05 - Copy"},
-    {"date": "2026-04-14", "classification": "held",      "utm_campaign": "82_Leads_Landing_Page_Schedule_Event_AI_Automation_Specialist", "utm_content": "AD133_VID_Friend_of_my_told_me"},
-    # ── April 15 ────────────────────────────────────────────────────────────
-    {"date": "2026-04-15", "classification": "scheduled", "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "Generic Nate - #01"},
-    {"date": "2026-04-15", "classification": "scheduled", "utm_campaign": "82_Leads_Landing_Page_Schedule_Event_AI_Automation_Specialist", "utm_content": "AD135_VID_Founder_friend_told_me"},
-    {"date": "2026-04-15", "classification": "scheduled", "utm_campaign": "[MARKETING] [SCHEDULES] [79]",                          "utm_content": "Generic Nate - #01"},
-]
 
-# ---------------------------------------------------------------------------
-# Build cache records: normalise UTMs, sort by date
-# ---------------------------------------------------------------------------
-records = []
-for c in SEGMENT_CONTACTS:
-    records.append({
-        "date":           c["date"],
-        "classification": c["classification"],
-        "utm_campaign":   clean_utm(c["utm_campaign"]) or "(no utm_campaign)",
-        "utm_content":    clean_utm(c["utm_content"])  or "(no utm_content)",
-    })
+# ── Download MH sheet → build email set ──────────────────────────────────────
+print("Downloading MH sheet…")
+with urllib.request.urlopen(SHEET_BASE + GID_MH) as resp:
+    mh_content = resp.read().decode("utf-8")
 
-records.sort(key=lambda x: x["date"])
+mh_emails: set = set()
+mh_reader = csv.DictReader(io.StringIO(mh_content))
+for row in mh_reader:
+    email = row.get("Email", "").strip().lower()
+    if email:
+        mh_emails.add(email)
 
-date_min = records[0]["date"]  if records else "2024-10-24"
-date_max = records[-1]["date"] if records else "2026-04-15"
+print(f"MH emails loaded: {len(mh_emails)}")
+
+# ── Download MB sheet → main contacts ────────────────────────────────────────
+print("Downloading MB sheet…")
+with urllib.request.urlopen(SHEET_BASE + GID_MB) as resp:
+    mb_content = resp.read().decode("utf-8")
+
+contacts = []
+reader = csv.DictReader(io.StringIO(mb_content))
+for row in reader:
+    raw_date = row.get("Create Date", "").strip()
+    date = raw_date[:10]  # YYYY-MM-DD
+    if not date or len(date) < 10:
+        continue
+
+    email = row.get("Email", "").strip().lower()
+    mql_val = row.get("MQL", "").strip()
+    sql_val = row.get("SQL", "").strip()
+    attribution = row.get("Attribution (Contact-Level)", "").strip() or "(unknown)"
+
+    contact = {
+        "date":         date,
+        "email":        email,
+        "mql":          mql_val == "Yes",
+        "sql":          sql_val == "Yes",
+        "mh":           email in mh_emails,
+        "attribution":  attribution,
+        "utm_source":   clean_utm(row.get("utm_source",   "")) or "",
+        "utm_campaign": clean_utm(row.get("utm_campaign", "")) or "(no utm_campaign)",
+        "utm_content":  clean_utm(row.get("utm_content",  "")) or "(no utm_content)",
+    }
+    contacts.append(contact)
+
+contacts.sort(key=lambda x: x["date"])
+
+dates    = [c["date"] for c in contacts]
+date_min = dates[0]  if dates else "2026-01-01"
+date_max = dates[-1] if dates else "2026-12-31"
 
 cache = {
-    "deals":        records,   # key kept as "deals" for API compatibility
+    "contacts":     contacts,
+    "deals":        [c for c in contacts if c["mql"]],   # backward-compat key
     "date_min":     date_min,
     "date_max":     date_max,
     "generated_at": datetime.datetime.utcnow().isoformat() + "Z",
@@ -142,12 +96,18 @@ out_path = BASE / "hubspot_cache.json"
 with open(out_path, "w", encoding="utf-8") as f:
     json.dump(cache, f, indent=2, ensure_ascii=False)
 
+# ── Summary ───────────────────────────────────────────────────────────────────
+mql_all = [c for c in contacts if c["mql"]]
+sql_all = [c for c in contacts if c["sql"]]
+mh_all  = [c for c in contacts if c["mh"]]
 print(f"Cache written → {out_path}")
-print(f"Records: {len(records)}, range: {date_min} → {date_max}")
+print(f"Total MB: {len(contacts)}, range: {date_min} → {date_max}")
+print(f"MQL: {len(mql_all)}  MH: {len(mh_all)}  SQL: {len(sql_all)}")
 
-from collections import Counter
-cls = Counter(r["classification"] for r in records)
-apr = [r for r in records if "2026-04-01" <= r["date"] <= "2026-04-15"]
-apr_cls = Counter(r["classification"] for r in apr)
-print(f"All-time: booked={len(records)}  {dict(cls)}")
-print(f"April 1–15: booked={len(apr)}  {dict(apr_cls)}")
+for year in ["2024", "2025", "2026"]:
+    yr     = [c for c in contacts if c["date"].startswith(year)]
+    yr_mql = [c for c in yr if c["mql"]]
+    yr_mh  = [c for c in yr if c["mh"]]
+    yr_sql = [c for c in yr if c["sql"]]
+    if yr:
+        print(f"  {year}: mb={len(yr)} mql={len(yr_mql)} mh={len(yr_mh)} sql={len(yr_sql)}")

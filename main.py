@@ -14,13 +14,6 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).parent
 META_GRAPH_BASE    = "https://graph.facebook.com/v21.0"
-HUBSPOT_API_BASE   = "https://api.hubapi.com"
-HS_PIPELINE_INBOUND = "793577095"   # Placements — Inbound Sales Stage
-HS_STAGE_SCHEDULED  = "1162444910"  # Meeting Scheduled
-HS_STAGE_NOSH       = "1162732907"  # No-show
-
-def get_hs_token() -> str:
-    return os.getenv("HUBSPOT_API_KEY", "")
 
 def get_token() -> str:
     return os.getenv("META_ACCESS_TOKEN", "")
@@ -302,88 +295,6 @@ async def _fetch_ad_creatives_by_ids(ad_ids: list, token: str) -> dict:
     return result
 
 
-# ── HubSpot API helpers ───────────────────────────────────────────────────────
-
-async def _hs_search_deals(since_ms: int, until_ms: int) -> list:
-    token = get_hs_token()
-    deals, after = [], None
-    async with httpx.AsyncClient() as c:
-        while True:
-            body: dict = {
-                "filterGroups": [{"filters": [
-                    {"propertyName": "pipeline",   "operator": "EQ",  "value": HS_PIPELINE_INBOUND},
-                    {"propertyName": "createdate", "operator": "GTE", "value": str(since_ms)},
-                    {"propertyName": "createdate", "operator": "LTE", "value": str(until_ms)},
-                ]}],
-                "properties": ["dealstage", "createdate", "dealname"],
-                "limit": 100,
-            }
-            if after:
-                body["after"] = after
-            try:
-                r = await c.post(
-                    f"{HUBSPOT_API_BASE}/crm/v3/objects/deals/search",
-                    headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-                    json=body, timeout=20,
-                )
-                if r.status_code != 200:
-                    print(f"[hs deals] {r.status_code}: {r.text[:200]}")
-                    break
-                data = r.json()
-                deals.extend(data.get("results", []))
-                after = data.get("paging", {}).get("next", {}).get("after")
-                if not after:
-                    break
-            except Exception as e:
-                print(f"[hs deals] {e}")
-                break
-    return deals
-
-async def _hs_batch_associations(deal_ids: list, token: str) -> dict:
-    """Returns {deal_id_str: [contact_id_str, ...]}"""
-    result: dict = {}
-    async with httpx.AsyncClient() as c:
-        for i in range(0, len(deal_ids), 100):
-            batch = [str(d) for d in deal_ids[i:i+100]]
-            try:
-                r = await c.post(
-                    f"{HUBSPOT_API_BASE}/crm/v4/associations/deals/contacts/batch/read",
-                    headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-                    json={"inputs": [{"id": d} for d in batch]},
-                    timeout=20,
-                )
-                if r.status_code == 200:
-                    for item in r.json().get("results", []):
-                        from_id = str(item.get("from", {}).get("id", ""))
-                        result[from_id] = [str(t["toObjectId"]) for t in item.get("to", [])]
-            except Exception as e:
-                print(f"[hs assoc batch] {e}")
-    return result
-
-async def _hs_batch_contacts(contact_ids: list, token: str) -> dict:
-    """Returns {contact_id_str: {utm_campaign, utm_content}}"""
-    result: dict = {}
-    async with httpx.AsyncClient() as c:
-        for i in range(0, len(contact_ids), 100):
-            batch = contact_ids[i:i+100]
-            try:
-                r = await c.post(
-                    f"{HUBSPOT_API_BASE}/crm/v3/objects/contacts/batch/read",
-                    headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-                    json={"inputs": [{"id": cid} for cid in batch],
-                          "properties": ["email", "utm_campaign", "utm_content"]},
-                    timeout=15,
-                )
-                if r.status_code == 200:
-                    for ct in r.json().get("results", []):
-                        props = ct.get("properties", {})
-                        result[str(ct["id"])] = {
-                            "utm_campaign": props.get("utm_campaign") or "",
-                            "utm_content":  props.get("utm_content")  or "",
-                        }
-            except Exception as e:
-                print(f"[hs contacts] {e}")
-    return result
 
 
 # ── App ───────────────────────────────────────────────────────────────────────
@@ -849,6 +760,216 @@ async def api_debug_conversions():
     })
 
 
+# ── Executive Summary constants ───────────────────────────────────────────────
+
+# Canonical MKT attributions (source of truth = HubSpot Attribution field)
+MKT_ATTRIBUTIONS = {
+    "Meta Ads - On-site/Conversion",   # actual HubSpot value (lowercase s, hyphen)
+    "Meta Ads - On Site/Conversion",   # keep variant just in case
+    "Meta Ads - Callingly",
+    "Meta Ads - Callingly/Instant Forms",
+    "Meta Ads",
+    "Google Ads",
+    "Google Search",
+    "Google Search - Organic",
+    "Facebook Ads",
+    "Twitter Ads",
+    "LinkedIn Ads",
+    "Reddit Ads",
+    "Direct Traffic",
+    "Organic Social",
+}
+
+def _attr_channel(attr: str, utm_campaign: str = "") -> str:
+    """Map raw attribution + utm_campaign to a display channel key.
+    For Meta contacts, utm_campaign drives the sub-channel split:
+      'Instant' in utm_campaign → meta_callingly (Instant Form)
+      otherwise               → meta_onsite (On-Site/Conversion)
+    """
+    a = attr.lower()
+    if "meta" in a or "facebook" in a:
+        if "instant" in utm_campaign.lower():
+            return "meta_callingly"
+        return "meta_onsite"
+    if "google ads" in a:                 return "google_paid"
+    if "google" in a:                     return "google_organic"
+    if "twitter" in a or "x ads" in a:   return "x"
+    if "linkedin" in a:                   return "linkedin"
+    if "reddit" in a:                     return "reddit"
+    if "direct" in a:                     return "direct"
+    if "organic" in a:                    return "organic"
+    return "other"
+
+_HS_CACHE_PATH = os.path.join(os.path.dirname(__file__), "hubspot_cache.json")
+
+def _load_hs_contacts(d_since: str, d_until: str, mkt_only: bool = True):
+    """Return contacts filtered by date range and optionally MKT attribution."""
+    if not os.path.exists(_HS_CACHE_PATH):
+        return []
+    with open(_HS_CACHE_PATH, "r", encoding="utf-8") as f:
+        cache = json.load(f)
+    all_c = cache.get("contacts", [])
+    result = [c for c in all_c if d_since <= c["date"] <= d_until]
+    if mkt_only:
+        result = [c for c in result if c.get("attribution", "") in MKT_ATTRIBUTIONS]
+    return result
+
+
+@app.get("/api/executive/funnel")
+async def api_executive_funnel(preset: str = "this_month", since: str = None, until: str = None):
+    """Panel 1.1 — Funnel Overview (Total MKT). Returns stage counts + conv rates."""
+    d_since, d_until, _, _ = _compute_period(
+        preset if not (since and until) else None, since, until
+    )
+    contacts = _load_hs_contacts(d_since, d_until, mkt_only=True)
+
+    mb  = len(contacts)
+    mql = sum(1 for c in contacts if c.get("mql"))
+    mh  = sum(1 for c in contacts if c.get("mh"))
+    sql = sum(1 for c in contacts if c.get("sql"))
+
+    def _pct_of_mb(num):
+        return round(num / mb * 100, 1) if mb else None
+
+    stages = [
+        {"stage": "Meeting Booked (MB)", "count": mb,  "conv_from_mb": None},
+        {"stage": "MQL",                 "count": mql, "conv_from_mb": _pct_of_mb(mql)},
+        {"stage": "Meeting Held (MH)",   "count": mh,  "conv_from_mb": _pct_of_mb(mh)},
+        {"stage": "SQL",                 "count": sql, "conv_from_mb": _pct_of_mb(sql)},
+        {"stage": "EL Sent",             "count": None, "conv_from_mb": None},
+        {"stage": "EL Signed",           "count": None, "conv_from_mb": None},
+    ]
+
+    return JSONResponse({
+        "since": d_since, "until": d_until,
+        "stages": stages,
+        "totals": {"mb": mb, "mql": mql, "mh": mh, "sql": sql},
+    })
+
+
+@app.get("/api/executive/spend")
+async def api_executive_spend(preset: str = "this_month", since: str = None, until: str = None):
+    """Panel 1.2 — Spend Summary by Channel. Combines Meta API spend + HubSpot funnel counts."""
+    await _load_custom_conversions()
+    token = get_token()
+    accounts_list = get_accounts()
+
+    d_since, d_until, _, _ = _compute_period(
+        preset if not (since and until) else None, since, until
+    )
+
+    # ── Meta spend from API — split by campaign (onsite vs callingly) ────────
+    meta_spend = 0.0
+    spend_onsite    = 0.0
+    spend_callingly = 0.0
+    if token and accounts_list:
+        for acc in accounts_list:
+            camp_rows = await _get_insights(acc, token, d_since, d_until, "campaign")
+            for row in camp_rows:
+                s = float(row.get("spend", 0))
+                meta_spend += s
+                name = row.get("campaign_name", "").lower()
+                if "instant" in name:
+                    spend_callingly += s
+                else:
+                    spend_onsite += s
+    meta_spend       = round(meta_spend, 2)
+    spend_onsite     = round(spend_onsite, 2)
+    spend_callingly  = round(spend_callingly, 2)
+
+    # ── HubSpot funnel by channel ─────────────────────────────────────────────
+    contacts = _load_hs_contacts(d_since, d_until, mkt_only=True)
+
+    # Accumulators per channel key
+    channels: dict = {}
+    def _ensure(key):
+        if key not in channels:
+            channels[key] = {"mb": 0, "mql": 0, "mh": 0, "sql": 0}
+        return channels[key]
+
+    for c in contacts:
+        ch = _attr_channel(c.get("attribution", ""), c.get("utm_campaign", ""))
+        _ensure(ch)
+        channels[ch]["mb"]  += 1
+        if c.get("mql"): channels[ch]["mql"] += 1
+        if c.get("mh"):  channels[ch]["mh"]  += 1
+        if c.get("sql"): channels[ch]["sql"]  += 1
+
+    def _cost(spend, count):
+        return round(spend / count, 2) if count else None
+
+    def _row(label, spend, ch_key, sub=False):
+        d = channels.get(ch_key, {"mb": 0, "mql": 0, "mh": 0, "sql": 0})
+        mb, mql, mh, sql = d["mb"], d["mql"], d["mh"], d["sql"]
+        return {
+            "channel": label,
+            "sub": sub,
+            "spend": spend,
+            "mb":    mb,  "cpmb":  _cost(spend, mb)  if spend else None,
+            "mql":   mql, "cpmql":  _cost(spend, mql) if spend else None,
+            "mh":    mh,  "cpmh":  _cost(spend, mh)  if spend else None,
+            "sql":   sql, "cpsql": _cost(spend, sql)  if spend else None,
+            "el_sent": None, "cost_el_sent": None,
+            "el_signed": None, "cost_el_signed": None,
+        }
+
+    # Total MKT funnel counts (same source as Panel 1.1)
+    total_mb  = sum(1 for c in contacts)
+    total_mql = sum(1 for c in contacts if c.get("mql"))
+    total_mh  = sum(1 for c in contacts if c.get("mh"))
+    total_sql = sum(1 for c in contacts if c.get("sql"))
+
+    # Meta-attributed counts for the Meta Ads row
+    meta_onsite   = channels.get("meta_onsite",   {"mb":0,"mql":0,"mh":0,"sql":0})
+    meta_callingly= channels.get("meta_callingly",{"mb":0,"mql":0,"mh":0,"sql":0})
+    meta_mb  = meta_onsite["mb"]  + meta_callingly["mb"]
+    meta_mql = meta_onsite["mql"] + meta_callingly["mql"]
+    meta_mh  = meta_onsite["mh"]  + meta_callingly["mh"]
+    meta_sql = meta_onsite["sql"] + meta_callingly["sql"]
+
+    rows = [
+        {
+            "channel": "Meta Ads", "sub": False,
+            "spend": meta_spend,
+            "mb":  meta_mb,  "cpmb":  _cost(meta_spend, meta_mb),
+            "mql": meta_mql, "cpmql": _cost(meta_spend, meta_mql),
+            "mh":  meta_mh,  "cpmh":  _cost(meta_spend, meta_mh),
+            "sql": meta_sql, "cpsql": _cost(meta_spend, meta_sql),
+            "el_sent": None, "cost_el_sent": None, "el_signed": None, "cost_el_signed": None,
+        },
+        _row(">> On-Site/Conversion",       spend_onsite,    "meta_onsite",    sub=True),
+        _row(">> Instant Form (Callingly)", spend_callingly, "meta_callingly", sub=True),
+        _row("Google Ads",                 None, "google_paid"),
+        _row("Google Search - Organic",    None, "google_organic"),
+        _row("Organic Social",             None, "organic"),
+        _row("Direct Traffic",             None, "direct"),
+        _row("YouTube",                    None, "youtube"),
+        _row("X Ads",                      None, "x"),
+        _row("LinkedIn",                   None, "linkedin"),
+    ]
+
+    rows.append({
+        "channel": "Total (all MKT)", "sub": False, "total": True,
+        "spend": meta_spend,
+        "mb": total_mb,  "cpmb":  _cost(meta_spend, total_mb),
+        "mql": total_mql,"cpmql": _cost(meta_spend, total_mql),
+        "mh": total_mh,  "cpmh":  _cost(meta_spend, total_mh),
+        "sql": total_sql,"cpsql": _cost(meta_spend, total_sql),
+        "el_sent": None, "cost_el_sent": None, "el_signed": None, "cost_el_signed": None,
+    })
+
+    return JSONResponse({
+        "since": d_since, "until": d_until,
+        "rows": rows,
+        "meta_spend_total": meta_spend,
+    })
+
+
+@app.get("/executive", response_class=HTMLResponse)
+async def executive(request: Request):
+    return templates.TemplateResponse("executive.html", {"request": request})
+
+
 @app.get("/api/hubspot/funnel")
 async def api_hubspot_funnel(preset: str = "last_30d", since: str = None, until: str = None):
     cache_path = os.path.join(os.path.dirname(__file__), "hubspot_cache.json")
@@ -861,43 +982,75 @@ async def api_hubspot_funnel(preset: str = "last_30d", since: str = None, until:
         preset if not (since and until) else None, since, until
     )
 
-    # clamp to available cache range
     cache_min = cache.get("date_min", "2000-01-01")
     cache_max = cache.get("date_max", "2099-12-31")
     d_since = max(d_since, cache_min)
     d_until = min(d_until, cache_max)
 
-    records = [r for r in cache["deals"] if d_since <= r["date"] <= d_until]
+    # All contacts in period — everyone here booked a meeting
+    all_contacts = cache.get("contacts", cache.get("deals", []))
+    contacts = [c for c in all_contacts if d_since <= c["date"] <= d_until]
 
-    summary: dict = {"booked": 0, "held": 0, "no_show": 0, "scheduled": 0}
+    # Funnel: booked (everyone) → mql (MQL=Yes) → sql (SQL=Yes)
+    booked = len(contacts)
+    mql    = sum(1 for c in contacts if c.get("mql", False))
+    sql    = sum(1 for c in contacts if c.get("sql", False))
+
+    mql_rate = round(mql / booked * 100, 1) if booked else None
+    sql_rate = round(sql / booked * 100, 1) if booked else None
+
+    summary = {
+        "booked":   booked,
+        "mql":      mql,
+        "sql":      sql,
+        "mql_rate": mql_rate,
+        "sql_rate": sql_rate,
+    }
+
+    # Breakdowns — ALL booked contacts
     by_camp: dict = {}
     by_cont: dict = {}
+    by_attr: dict = {}
 
-    for r in records:
-        cl = r["classification"]
-        summary["booked"] += 1
-        summary[cl] += 1
-        for key, store in [(r["utm_campaign"], by_camp), (r["utm_content"], by_cont)]:
+    for c in contacts:
+        camp   = c.get("utm_campaign", "(no utm_campaign)")
+        cont   = c.get("utm_content",  "(no utm_content)")
+        attr   = c.get("attribution",  "(unknown)")
+        is_mql = c.get("mql", False)
+        is_sql = c.get("sql", False)
+
+        for key, store in [(camp, by_camp), (cont, by_cont), (attr, by_attr)]:
             if key not in store:
-                store[key] = {"label": key, "booked": 0, "held": 0, "no_show": 0, "scheduled": 0}
+                store[key] = {"label": key, "booked": 0, "mql": 0, "sql": 0}
             store[key]["booked"] += 1
-            store[key][cl] += 1
+            if is_mql: store[key]["mql"] += 1
+            if is_sql: store[key]["sql"] += 1
 
-    def _with_rate(store):
+    def _with_rates(store):
         out = []
         for item in store.values():
             b = item["booked"]
-            item["show_rate"] = round(item["held"] / b * 100, 1) if b else None
+            item["mql_rate"] = round(item["mql"] / b * 100, 1) if b else None
+            item["sql_rate"] = round(item["sql"] / b * 100, 1) if b else None
             out.append(item)
         return sorted(out, key=lambda x: -x["booked"])
 
-    b = summary["booked"]
-    summary["show_rate"] = round(summary["held"] / b * 100, 1) if b else None
+    # Monthly trend — all booked contacts
+    from collections import defaultdict
+    monthly: dict = defaultdict(lambda: {"booked": 0, "mql": 0, "sql": 0})
+    for c in contacts:
+        mo = c["date"][:7]
+        monthly[mo]["booked"] += 1
+        if c.get("mql", False): monthly[mo]["mql"] += 1
+        if c.get("sql", False): monthly[mo]["sql"] += 1
+    monthly_list = [{"month": k, **v} for k, v in sorted(monthly.items())]
 
     return JSONResponse({
         "since": d_since, "until": d_until,
         "summary": summary,
-        "by_campaign": _with_rate(by_camp),
-        "by_content":  _with_rate(by_cont),
+        "by_campaign":    _with_rates(by_camp),
+        "by_content":     _with_rates(by_cont),
+        "by_attribution": _with_rates(by_attr),
+        "monthly":        monthly_list,
         "cache_generated_at": cache.get("generated_at", ""),
     })

@@ -16,7 +16,7 @@
     .controls { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
     .tabs { display:flex; background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
     .tab { padding:7px 10px; font-size:.8rem; cursor:pointer; color:var(--muted); border:none; background:none; transition:background .15s,color .15s; white-space:nowrap; }
-    .tab.active { background:var(--accent); color:#fff; }
+    .tab.active { background:var(--accent); color:var(--bg); }
     .tab:hover:not(.active) { background:var(--border); color:var(--text); }
     .dr-wrap { position:relative; }
     .dr-display { display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:7px 14px; font-size:.82rem; cursor:pointer; white-space:nowrap; transition:border-color .15s; }
@@ -38,20 +38,20 @@
     .dr-day:hover:not(.dr-empty):not(.dr-sel-start):not(.dr-sel-end) { background:#ffffff14; }
     .dr-empty { cursor:default; pointer-events:none; }
     .dr-today { box-shadow:inset 0 0 0 1px #ffffff40; }
-    .dr-sel-start { background:var(--accent); color:#fff; font-weight:700; border-radius:4px 0 0 4px; }
-    .dr-sel-end   { background:var(--accent); color:#fff; font-weight:700; border-radius:0 4px 4px 0; }
+    .dr-sel-start { background:var(--accent); color:var(--bg); font-weight:700; border-radius:4px 0 0 4px; }
+    .dr-sel-end   { background:var(--accent); color:var(--bg); font-weight:700; border-radius:0 4px 4px 0; }
     .dr-sel-start.dr-sel-end { border-radius:4px; }
     .dr-in-range  { background:rgba(255,77,0,.18); border-radius:0; }
     .dr-actions { display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--border); padding-top:14px; }
     .dr-btn-cancel { background:none; border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:7px 16px; font-size:.83rem; cursor:pointer; }
     .dr-btn-cancel:hover { color:var(--text); border-color:var(--muted); }
-    .dr-btn-apply  { background:var(--accent); color:#fff; border:none; border-radius:8px; padding:7px 18px; font-size:.83rem; font-weight:600; cursor:pointer; }
+    .dr-btn-apply  { background:var(--accent); color:var(--bg); border:none; border-radius:8px; padding:7px 18px; font-size:.83rem; font-weight:600; cursor:pointer; }
     .dr-btn-apply:hover { opacity:.88; }
     .btn-settings { background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--muted); padding:7px 12px; font-size:.85rem; cursor:pointer; transition:all .15s; }
     .btn-settings:hover { color:var(--text); border-color:var(--accent); }
     .acc-tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
     .acc-tab { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:5px 14px; font-size:.8rem; color:var(--muted); cursor:pointer; transition:all .15s; white-space:nowrap; }
-    .acc-tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .acc-tab.active { background:var(--accent); border-color:var(--accent); color:var(--bg); }
     .metrics-grid { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:24px; }
     .m-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 14px; min-width:120px; flex:1; cursor:grab; position:relative; transition:opacity .15s,transform .15s; user-select:none; }
     .m-card.dragging { opacity:.4; transform:scale(.97); }
@@ -67,7 +67,7 @@
     .chart-title { font-size:.9rem; font-weight:600; }
     .chart-metric-tabs { display:flex; gap:6px; flex-wrap:wrap; }
     .cmt { font-size:.75rem; padding:4px 10px; border-radius:6px; cursor:pointer; border:1px solid var(--border); background:none; color:var(--muted); transition:all .15s; }
-    .cmt.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .cmt.active { background:var(--accent); border-color:var(--accent); color:var(--bg); }
     .chart-sel-label { font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; white-space:nowrap; }
     .chart-select { background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:.78rem; padding:4px 26px 4px 9px; cursor:pointer; appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 8px center; transition:border-color .15s; }
     .chart-select:hover, .chart-select:focus { border-color:var(--accent); outline:none; }
@@ -79,7 +79,7 @@
     .ms-btn { display:flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:6px 12px; font-size:.82rem; cursor:pointer; white-space:nowrap; user-select:none; transition:border-color .15s; }
     .ms-btn:hover { border-color:var(--accent); }
     .ms-btn.has-filter { border-color:var(--accent); color:var(--accent); }
-    .ms-badge { background:var(--accent); color:#fff; border-radius:20px; padding:1px 6px; font-size:.72rem; }
+    .ms-badge { background:var(--accent); color:var(--bg); border-radius:20px; padding:1px 6px; font-size:.72rem; }
     .ms-dropdown { display:none; position:absolute; top:calc(100% + 6px); right:0; z-index:50; background:var(--bg); border:1px solid var(--border); border-radius:10px; width:360px; box-shadow:0 8px 24px #00000055; overflow:hidden; }
     .ms-dropdown.open { display:block; }
     .ms-search-wrap { padding:10px; border-bottom:1px solid var(--border); }
@@ -123,7 +123,21 @@
     th.col-dragging { opacity:.35; }
     th.col-drag-over { box-shadow: -3px 0 0 0 var(--accent); }
     .col-resize:hover, .col-resize.active { background:var(--accent); opacity:.6; }
-    #colMenu { position:fixed; background:#1e1e1e; border:1px solid var(--border); border-radius:8px; box-shadow:0 8px 24px #0009; z-index:9999; min-width:180px; padding:4px 0; display:none; }
+    .hs-table-wrap { overflow:auto; min-height:60px; }
+    .hs-table-wrap thead th { position:sticky; top:0; z-index:3; background:var(--surface); }
+    .table-resize-h { width:100%; height:10px; cursor:ns-resize; display:flex; align-items:center; justify-content:center; user-select:none; }
+    .table-resize-h::after { content:''; width:36px; height:3px; background:var(--border); border-radius:2px; transition:background .15s; }
+    .table-resize-h:hover::after, .table-resize-h.active::after { background:var(--accent); }
+    .hs-panel { position:relative; min-width:240px; overflow:hidden; padding-right:6px; }
+    .hs-panel-header { display:flex; align-items:center; gap:8px; padding:10px 0 8px; }
+    .hs-panel-drag { color:var(--muted); cursor:grab; padding:3px 4px; border-radius:4px; transition:color .15s,background .15s; user-select:none; flex-shrink:0; line-height:0; }
+    .hs-panel-drag:hover { color:var(--text); background:var(--border); }
+    .hs-panel-drag:active { cursor:grabbing; }
+    .hs-panel.panel-dragging { opacity:.35; transform:scale(.98); transition:opacity .1s,transform .1s; }
+    .hs-panel.panel-drag-over { outline:2px solid var(--accent); outline-offset:-2px; border-radius:8px; }
+    .panel-resize-e { position:absolute; right:0; top:0; bottom:0; width:6px; cursor:col-resize; z-index:2; border-radius:3px; }
+    .panel-resize-e:hover, .panel-resize-e.active { background:var(--accent); opacity:.6; }
+    #colMenu { position:fixed; background:var(--surface); border:1px solid var(--border); border-radius:8px; box-shadow:0 8px 24px #0009; z-index:9999; min-width:180px; padding:4px 0; display:none; }
     #colMenu .cm-item { padding:7px 14px; font-size:.8rem; cursor:pointer; color:var(--text); display:flex; align-items:center; gap:8px; white-space:nowrap; }
     #colMenu .cm-item:hover { background:#ffffff11; }
     #colMenu .cm-item.cm-hide { color:#f87171; }
@@ -179,9 +193,9 @@
     .cm-vars { font-size:.72rem; color:var(--muted); margin-bottom:10px; }
     .cm-vars p { margin-bottom:6px; }
     .var-chip { display:inline-block; background:#ffffff12; border:1px solid var(--border); border-radius:4px; padding:2px 8px; font-size:.75rem; font-family:monospace; cursor:pointer; margin:2px 2px 2px 0; transition:background .12s,border-color .12s; }
-    .var-chip:hover { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .var-chip:hover { background:var(--accent); border-color:var(--accent); color:var(--bg); }
     .cm-actions { display:flex; gap:6px; }
-    .cm-save { flex:1; padding:7px; background:var(--accent); color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:.83rem; }
+    .cm-save { flex:1; padding:7px; background:var(--accent); color:var(--bg); border:none; border-radius:6px; cursor:pointer; font-size:.83rem; }
     .cm-cancel { padding:7px 12px; background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; cursor:pointer; font-size:.83rem; }
     .custom-metric-item { display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); font-size:.83rem; }
     .custom-metric-item:last-child { border-bottom:none; }
@@ -226,7 +240,7 @@
     .wgt-panel { position:fixed; right:0; top:0; bottom:0; width:300px; background:var(--bg); border-left:1px solid var(--border); transform:translateX(100%); transition:transform .22s; z-index:80; display:flex; flex-direction:column; overflow:hidden; }
     .wgt-panel.open { transform:translateX(0); }
     .wgt-panel-hd { display:flex; align-items:center; justify-content:space-between; padding:14px 14px 14px 16px; border-bottom:1px solid var(--border); font-size:.88rem; font-weight:600; flex-shrink:0; }
-    .wgt-panel-add { background:var(--accent); color:#fff; border:none; border-radius:8px; padding:5px 11px; font-size:.88rem; cursor:pointer; line-height:1.4; transition:opacity .15s; }
+    .wgt-panel-add { background:var(--accent); color:var(--bg); border:none; border-radius:8px; padding:5px 11px; font-size:.88rem; cursor:pointer; line-height:1.4; transition:opacity .15s; }
     .wgt-panel-add:hover { opacity:.85; }
     .wgt-panel-body { flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:10px; }
     .wgt-panel-empty { padding:28px 16px; text-align:center; color:var(--muted); font-size:.8rem; line-height:1.6; }
@@ -240,7 +254,7 @@
     .wgt-tab-label { writing-mode:vertical-rl; font-size:.6rem; text-transform:uppercase; letter-spacing:.08em; }
     .wgt-size-row { display:flex; gap:6px; }
     .wgt-size-btn { flex:1; padding:6px 4px; text-align:center; font-size:.78rem; cursor:pointer; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--muted); transition:all .15s; }
-    .wgt-size-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .wgt-size-btn.active { background:var(--accent); border-color:var(--accent); color:var(--bg); }
     .wgt-sort-row { display:flex; gap:10px; }
     .wgt-sort-opt { display:flex; align-items:center; gap:5px; font-size:.82rem; cursor:pointer; }
     .wgt-sort-opt input { accent-color:var(--accent); cursor:pointer; }
@@ -251,7 +265,7 @@
     .widget-picker h3 { font-size:.95rem; margin-bottom:16px; }
     .wgt-type-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
     .wgt-type-btn { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px 12px; cursor:pointer; font-size:.84rem; text-align:center; transition:all .15s; color:var(--text); }
-    .wgt-type-btn:hover { border-color:var(--accent); background:#ff4d0010; }
+    .wgt-type-btn:hover { border-color:var(--accent); background:rgba(237,232,208,.07); }
     .wgt-config-overlay { display:none; position:fixed; inset:0; background:#00000066; z-index:120; align-items:center; justify-content:center; }
     .wgt-config-overlay.open { display:flex; }
     .wgt-config-panel { background:var(--bg); border:1px solid var(--border); border-radius:14px; padding:24px; width:340px; max-width:95vw; box-shadow:0 16px 48px #00000099; }
@@ -262,13 +276,90 @@
     .wgt-cfg-input:focus { outline:none; border-color:var(--accent); }
     .wgt-cfg-select { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:7px; color:var(--text); padding:8px 10px; font-size:.84rem; }
     .wgt-cfg-actions { display:flex; gap:8px; margin-top:18px; }
-    .wgt-cfg-save   { flex:1; background:var(--accent); color:#fff; border:none; border-radius:8px; padding:9px; font-size:.84rem; font-weight:600; cursor:pointer; }
+    .wgt-cfg-save   { flex:1; background:var(--accent); color:var(--bg); border:none; border-radius:8px; padding:9px; font-size:.84rem; font-weight:600; cursor:pointer; }
     .wgt-cfg-cancel { background:none; border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:9px 16px; font-size:.84rem; cursor:pointer; }
   </style>
 </head>
 <body>
 <div class="page">
 
+  <!-- ── Top-level section nav ───────────────────────────────────────────── -->
+  <div style="display:flex;align-items:center;gap:0;background:var(--bg);border-bottom:2px solid var(--border);padding:0 20px;flex-shrink:0;">
+    <button id="navExec" onclick="switchSection('executive')"
+      style="padding:10px 18px;border:none;background:none;font-size:.82rem;font-weight:600;cursor:pointer;border-bottom:2px solid var(--accent);color:var(--accent);margin-bottom:-2px;transition:color .15s;">
+      Executive Summary
+    </button>
+    <button id="navMeta" onclick="switchSection('meta')"
+      style="padding:10px 18px;border:none;background:none;font-size:.82rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);margin-bottom:-2px;transition:color .15s;">
+      Meta Ads
+    </button>
+  </div>
+
+  <!-- ── Executive Summary view ─────────────────────────────────────────── -->
+  <div id="executiveView" style="padding:24px 20px 60px;">
+
+    <!-- Date controls -->
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:24px;">
+      <div class="tabs" id="execPresetTabs">
+        <button class="tab" data-ep="today" onclick="setExecPreset(this)">Today</button>
+        <button class="tab" data-ep="last_7d" onclick="setExecPreset(this)">7 days</button>
+        <button class="tab active" data-ep="this_month" onclick="setExecPreset(this)">This month</button>
+        <button class="tab" data-ep="last_month" onclick="setExecPreset(this)">Last month</button>
+        <button class="tab" data-ep="last_30d" onclick="setExecPreset(this)">30 days</button>
+        <button class="tab" data-ep="all_time" onclick="setExecPreset(this)">All time</button>
+      </div>
+      <div class="dr-wrap" id="edrWrap">
+        <button class="dr-display" id="edrDisplay" onclick="edrToggle()">
+          <span id="edrLabel">This month</span>
+          <span class="dr-arrow">▾</span>
+        </button>
+        <div class="dr-picker" id="edrPicker">
+          <div class="dr-calendars">
+            <div class="dr-cal">
+              <span class="dr-cal-label">Start date</span>
+              <div class="dr-cal-nav">
+                <button class="dr-nav-btn" onclick="edrNavMonth('start',-1)">‹</button>
+                <span class="dr-cal-nav-label" id="edrStartMonth"></span>
+                <button class="dr-nav-btn" onclick="edrNavMonth('start',1)">›</button>
+              </div>
+              <div class="dr-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+              <div class="dr-days" id="edrStartDays"></div>
+            </div>
+            <div class="dr-cal">
+              <span class="dr-cal-label">End date</span>
+              <div class="dr-cal-nav">
+                <button class="dr-nav-btn" onclick="edrNavMonth('end',-1)">‹</button>
+                <span class="dr-cal-nav-label" id="edrEndMonth"></span>
+                <button class="dr-nav-btn" onclick="edrNavMonth('end',1)">›</button>
+              </div>
+              <div class="dr-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+              <div class="dr-days" id="edrEndDays"></div>
+            </div>
+          </div>
+          <div class="dr-actions">
+            <button class="dr-btn-cancel" onclick="edrClose()">Cancel</button>
+            <button class="dr-btn-apply" onclick="edrApply()">Apply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 1.1 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+      <div id="pt-11" contenteditable="true" spellcheck="false" style="font-size:.9rem;font-weight:600;margin-bottom:16px;outline:none;cursor:text;border-bottom:1px dashed transparent;" onmouseover="this.style.borderBottomColor='var(--border)'" onmouseout="this.style.borderBottomColor='transparent'" title="Click to edit">Funnel Overview (Total MKT)</div>
+      <div id="execFunnelContent"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
+    </div>
+
+    <!-- Panel 1.2 -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+      <div id="pt-12" contenteditable="true" spellcheck="false" style="font-size:.9rem;font-weight:600;margin-bottom:16px;outline:none;cursor:text;border-bottom:1px dashed transparent;" onmouseover="this.style.borderBottomColor='var(--border)'" onmouseout="this.style.borderBottomColor='transparent'" title="Click to edit">Spend Summary by Channel</div>
+      <div id="execSpendContent"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
+    </div>
+
+  </div>
+
+  <!-- ── Meta Ads view ───────────────────────────────────────────────────── -->
+  <div id="metaView" style="display:none;">
   <div class="top-bar">
     <div class="top-title">
       <h1>📊 Dashboard — Meta Ads</h1>
@@ -456,36 +547,15 @@
     </div>
 
     <div id="hubspotView" style="display:none;">
-      <div id="hsFunnelCards" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;"></div>
-      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
-        <div style="flex:1;min-width:300px;">
-          <div class="section-row" style="margin-bottom:10px;"><span class="section-title">By Campaign</span></div>
-          <div class="table-wrap" style="overflow-x:auto;">
-            <table class="data-table" id="hsCampTable">
-              <colgroup id="hsCampColGroup"></colgroup>
-              <thead id="hsCampHead"></thead>
-              <tbody id="hsCampBody"></tbody>
-            </table>
-          </div>
-        </div>
-        <div style="flex:1;min-width:300px;">
-          <div class="section-row" style="margin-bottom:10px;"><span class="section-title">By Creative (utm_content)</span></div>
-          <div class="table-wrap" style="overflow-x:auto;">
-            <table class="data-table" id="hsContTable">
-              <colgroup id="hsContColGroup"></colgroup>
-              <thead id="hsContHead"></thead>
-              <tbody id="hsContBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+      <div id="hsFunnel" style="display:flex;gap:12px;align-items:stretch;margin-bottom:20px;flex-wrap:wrap;"></div>
+      <div id="hsPanelRow" style="display:flex;flex-wrap:wrap;align-items:flex-start;"></div>
     </div>
 
     <div id="widgetsSection" style="display:none; margin-top:28px;">
       <div class="widget-grid" id="widgetGrid"></div>
     </div>
   </div>
-</div>
+</div><!-- end metaView -->
 
 <!-- Widget panel -->
 <div class="wgt-panel" id="wgtPanel">
@@ -590,7 +660,7 @@
 <script>
 const ACCOUNTS = {{ accounts_json | safe }};
 const CONFIGURED = {{ 'true' if configured else 'false' }};
-const PREF_KEY = 'scale_army_dash_v3';
+const PREF_KEY = 'scale_army_dash_v4';
 const PAGES_KEY = 'scale_army_pages_v1';
 
 const COLS = [
@@ -679,24 +749,96 @@ const LP_COLS = [
   { key:'conv_rate',       label:'Conv. Rate',    always:false, defaultW:100, render:a=>numPct(a.conv_rate) },
   { key:'impressions',     label:'Impressions',   always:false, defaultW:105, render:a=>numN(a.impressions) },
 ];
-const DEFAULT_PREFS = { hiddenCols:['reach','video_views','thruplays','impressions'], hiddenMetrics:['reach','impressions','video_views','thruplays'], metricOrder:[], customMetrics:[], colWidths:{}, colOrder:[], hiddenCrCols:['campaign_name','impressions','thruplays','link_clicks','landing_page_views','connect_rate'], crColOrder:[], crColWidths:{}, hiddenLpCols:['link_clicks','impressions','connect_rate'], lpColOrder:[], lpColWidths:{}, hsColWidths:{}, hsColOrder:[] };
+const DEFAULT_PREFS = { hiddenCols:['reach','video_views','thruplays','impressions'], hiddenMetrics:['reach','impressions','video_views','thruplays'], metricOrder:[], customMetrics:[], colWidths:{}, colOrder:[], hiddenCrCols:['campaign_name','impressions','thruplays','link_clicks','landing_page_views','connect_rate'], crColOrder:[], crColWidths:{}, hiddenLpCols:['link_clicks','impressions','connect_rate'], lpColOrder:[], lpColWidths:{}, hsColWidths:{}, hsColOrder:[], hsTableHeights:{}, hsTableOrder:[], hsPanelWidths:{} };
+const HS_PANEL_META = {
+  hsAttr: { title:'By Source',               labelText:'Source',               sortKey:'hsAttrSort', dataKey:'by_attribution' },
+  hsCamp: { title:'By Campaign',             labelText:'Campaign',             sortKey:'hsCampSort', dataKey:'by_campaign'    },
+  hsCont: { title:'By Creative (utm_content)',labelText:'Creative (utm_content)',sortKey:'hsContSort', dataKey:'by_content'    },
+};
+const HS_PANELS_DEFAULT = ['hsAttr','hsCamp','hsCont'];
+function hsTableOrder() {
+  const saved = prefs.hsTableOrder || [];
+  return HS_PANELS_DEFAULT.every(k=>saved.includes(k)) ? saved : [...HS_PANELS_DEFAULT];
+}
+// ── HS panel drag-to-reorder ─────────────────────────────────────────────────
+let _hsPanelDragKey = null;
+function _hsPanelDragStart(e, pkey) {
+  _hsPanelDragKey = pkey;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', pkey);
+  setTimeout(()=>document.getElementById('hs-panel-'+pkey)?.classList.add('panel-dragging'), 0);
+}
+function _hsPanelDragOver(e, pkey) {
+  if (!_hsPanelDragKey || _hsPanelDragKey === pkey) return;
+  e.preventDefault();
+  document.querySelectorAll('.hs-panel.panel-drag-over').forEach(p=>p.classList.remove('panel-drag-over'));
+  document.getElementById('hs-panel-'+pkey)?.classList.add('panel-drag-over');
+}
+function _hsPanelDragLeave(e) { e.currentTarget.classList.remove('panel-drag-over'); }
+function _hsPanelDrop(e, pkey) {
+  e.preventDefault();
+  document.getElementById('hs-panel-'+pkey)?.classList.remove('panel-drag-over');
+  if (!_hsPanelDragKey || _hsPanelDragKey === pkey) return;
+  const order = hsTableOrder();
+  const fi = order.indexOf(_hsPanelDragKey), ti = order.indexOf(pkey);
+  if (fi < 0 || ti < 0) return;
+  order.splice(fi, 1); order.splice(ti, 0, _hsPanelDragKey);
+  prefs.hsTableOrder = order; savePrefs(prefs);
+  if (state.hsData) renderHubspot(state.hsData);
+}
+function _hsPanelDragEnd(e) {
+  _hsPanelDragKey = null;
+  document.querySelectorAll('.hs-panel.panel-dragging,.hs-panel.panel-drag-over').forEach(p=>p.classList.remove('panel-dragging','panel-drag-over'));
+}
+// ── HS panel width resize (right edge) ──────────────────────────────────────
+let _rsPanelW = null;
+function _hsPanelResizeW(e, pkey) {
+  e.preventDefault();
+  const panel = document.getElementById('hs-panel-'+pkey);
+  if (!panel) return;
+  const handle = e.currentTarget;
+  handle.classList.add('active');
+  if (!prefs.hsPanelWidths) prefs.hsPanelWidths = {};
+  _rsPanelW = { pkey, panel, handle, x0:e.clientX, w0:prefs.hsPanelWidths[pkey]||panel.offsetWidth };
+  document.addEventListener('mousemove', _onPanelResizeW);
+  document.addEventListener('mouseup', _offPanelResizeW);
+}
+function _onPanelResizeW(e) {
+  if (!_rsPanelW) return;
+  const nw = Math.max(240, _rsPanelW.w0 + e.clientX - _rsPanelW.x0);
+  _rsPanelW.panel.style.cssText = `min-width:${nw}px;max-width:${nw}px;overflow:hidden;padding-right:6px;position:relative;`;
+}
+function _offPanelResizeW(e) {
+  if (!_rsPanelW) return;
+  const nw = Math.max(240, _rsPanelW.w0 + e.clientX - _rsPanelW.x0);
+  prefs.hsPanelWidths[_rsPanelW.pkey] = nw;
+  savePrefs(prefs);
+  _rsPanelW.handle.classList.remove('active');
+  _rsPanelW = null;
+  document.removeEventListener('mousemove', _onPanelResizeW);
+  document.removeEventListener('mouseup', _offPanelResizeW);
+}
 const HS_COLS = [
-  {key:'label',     label:'',          defaultW:220},
-  {key:'booked',    label:'Booked',    defaultW:80},
-  {key:'held',      label:'Held',      defaultW:70},
-  {key:'no_show',   label:'No Show',   defaultW:90},
-  {key:'scheduled', label:'Upcoming',  defaultW:100},
-  {key:'show_rate', label:'Show Rate', defaultW:95},
+  {key:'label',    label:'',       defaultW:220},
+  {key:'booked',   label:'Booked', defaultW:80},
+  {key:'mql',      label:'MQL',    defaultW:70},
+  {key:'mql_rate', label:'MQL%',   defaultW:80},
+  {key:'sql',      label:'SQL',    defaultW:70},
+  {key:'sql_rate', label:'SQL%',   defaultW:80},
 ];
 function visHsCols() {
-  const order = (prefs.hsColOrder||[]).length ? prefs.hsColOrder : HS_COLS.map(c=>c.key);
+  const saved = prefs.hsColOrder || [];
+  // Reset saved order if it doesn't include all current HS_COLS keys (stale from old version)
+  const order = saved.length && HS_COLS.every(c => saved.includes(c.key))
+    ? saved
+    : HS_COLS.map(c=>c.key);
   return order.map(k=>HS_COLS.find(c=>c.key===k)).filter(Boolean);
 }
 let _hsDragKey = null;
 function _hsDragStart(e,key){_hsDragKey=key;e.dataTransfer.effectAllowed='move';setTimeout(()=>{const th=e.target.closest('th');if(th)th.classList.add('col-dragging');},0);}
 function _hsDragOver(e,key){if(_hsDragKey&&_hsDragKey!==key){e.preventDefault();e.dataTransfer.dropEffect='move';e.currentTarget.classList.add('col-drag-over');}}
 function _hsDragLeave(e){e.currentTarget.classList.remove('col-drag-over');}
-function _hsDrop(e,key){e.preventDefault();e.currentTarget.classList.remove('col-drag-over');if(!_hsDragKey||_hsDragKey===key)return;const keys=visHsCols().map(c=>c.key);const fi=keys.indexOf(_hsDragKey),ti=keys.indexOf(key);if(fi<0||ti<0)return;keys.splice(fi,1);keys.splice(ti,0,_hsDragKey);prefs.hsColOrder=keys;savePrefs(prefs);renderHubspot();}
+function _hsDrop(e,key){e.preventDefault();e.currentTarget.classList.remove('col-drag-over');if(!_hsDragKey||_hsDragKey===key)return;const keys=visHsCols().map(c=>c.key);const fi=keys.indexOf(_hsDragKey),ti=keys.indexOf(key);if(fi<0||ti<0)return;keys.splice(fi,1);keys.splice(ti,0,_hsDragKey);prefs.hsColOrder=keys;savePrefs(prefs);if(state.hsData)renderHubspot(state.hsData);}
 function _hsDragEnd(e){_hsDragKey=null;document.querySelectorAll('.col-dragging,.col-drag-over').forEach(el=>el.classList.remove('col-dragging','col-drag-over'));}
 function hsColSortIcon(colKey, sortState) {
   if(sortState.key!==colKey)return'<span class="th-sort-icon"></span>';
@@ -710,14 +852,29 @@ function renderHsTableHeader(prefix, labelText, sortState) {
   if(!cg||!head||!tbl)return;
   cg.innerHTML=cols.map(c=>`<col data-key="${c.key}" style="width:${prefs.hsColWidths[c.key]||c.defaultW}px">`).join('');
   tbl.style.width=cols.reduce((s,c)=>s+(prefs.hsColWidths[c.key]||c.defaultW),0)+'px';
-  const sortKey=prefix+'Sort';
   head.innerHTML=`<tr>${cols.map((c,i)=>{const sortCls=sortState.key===c.key?`sort-${sortState.dir}`:'';return`<th data-idx="${i}" data-key="${c.key}" class="${sortCls}" draggable="true" onclick="hsSort('${prefix}','${c.key}')" ondragstart="_hsDragStart(event,'${c.key}')" ondragover="_hsDragOver(event,'${c.key}')" ondragleave="_hsDragLeave(event)" ondrop="_hsDrop(event,'${c.key}')" ondragend="_hsDragEnd(event)" style="${c.key==='label'?'text-align:left;cursor:pointer':'cursor:pointer'}">${c.key==='label'?labelText:c.label}${hsColSortIcon(c.key,sortState)}<div class="col-resize" onclick="event.stopPropagation()"></div></th>`;}).join('')}</tr>`;
   head.querySelectorAll('.col-resize').forEach(h=>{h.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();const th=h.closest('th');const col=HS_COLS.find(c=>c.key===th.dataset.key);if(!col)return;_rs={col,x0:e.clientX,w0:prefs.hsColWidths[col.key]||col.defaultW,h,hs:prefix};h.classList.add('active');document.addEventListener('mousemove',onResize);document.addEventListener('mouseup',offResize);});});
+  // After paint: measure each th's natural content width and store as min-width floor
+  requestAnimationFrame(()=>{
+    tbl.style.tableLayout='auto';
+    cg.querySelectorAll('col').forEach(c=>{c._sw=c.style.width;c.style.width='';});
+    cols.forEach(col=>{const th=head.querySelector(`th[data-key="${col.key}"]`);if(th)col._headerMinW=th.offsetWidth+4;});
+    tbl.style.tableLayout='fixed';
+    let tw=0;
+    cols.forEach(col=>{
+      const el=cg.querySelector(`col[data-key="${col.key}"]`);
+      const saved=parseInt(el?._sw)||prefs.hsColWidths[col.key]||col.defaultW;
+      const w=Math.max(saved,col._headerMinW||0);
+      if(el){el.style.width=w+'px';}
+      tw+=w;
+    });
+    tbl.style.width=tw+'px';
+  });
 }
 function hsSort(prefix, key) {
-  const s = prefix==='hsCamp' ? state.hsCampSort : state.hsContSort;
+  const s = prefix==='hsCamp' ? state.hsCampSort : prefix==='hsAttr' ? state.hsAttrSort : state.hsContSort;
   if(s.key===key){s.dir=s.dir==='desc'?'asc':'desc';}else{s.key=key;s.dir=key==='label'?'asc':'desc';}
-  renderHubspot();
+  if(state.hsData)renderHubspot(state.hsData);
 }
 function sortHsItems(items, sortState) {
   const {key,dir}=sortState;
@@ -731,7 +888,7 @@ function loadPrefs() { try { return { ...DEFAULT_PREFS, ...JSON.parse(localStora
 function savePrefs(p) { localStorage.setItem(PREF_KEY, JSON.stringify(p)); }
 let prefs = loadPrefs();
 
-let state = { preset:'last_7d', since:null, until:null, accountId:null, level:'campaign', data:null, dailyData:null, creativeData:null, lpData:null, sort:{ key:'spend', dir:'desc' }, crSort:{ key:'spend', dir:'desc' }, lpSort:{ key:'spend', dir:'desc' }, hsCampSort:{key:'booked',dir:'desc'}, hsContSort:{key:'booked',dir:'desc'}, hsExcludeNoUtm:false };
+let state = { preset:'last_7d', since:null, until:null, accountId:null, level:'campaign', data:null, dailyData:null, creativeData:null, lpData:null, sort:{ key:'spend', dir:'desc' }, crSort:{ key:'spend', dir:'desc' }, lpSort:{ key:'spend', dir:'desc' }, hsCampSort:{key:'booked',dir:'desc'}, hsContSort:{key:'booked',dir:'desc'}, hsAttrSort:{key:'booked',dir:'desc'}, hsExcludeNoUtm:false };
 let chart = null;
 
 function allMetricDefs() { return [...BASE_METRICS, ...prefs.customMetrics.map(cm => ({ key:cm.id, label:cm.name, custom:true, fmt: v => fmtCustom(v,cm.format), invert: cm.invert===true||cm.invert==='true' }))]; }
@@ -773,7 +930,7 @@ async function load() {
       state.hsData = await r.json();
       hide('metricsGrid'); hide('chartWrap');
       document.getElementById('periodLabel').textContent = `${fd(state.hsData.since)} → ${fd(state.hsData.until)}`;
-      renderHubspot();
+      renderHubspot(state.hsData);
       show('hubspotView'); hide('tableView'); hide('creativeView'); hide('lpView');
       hide('loadingEl'); show('content'); updateDrLabel();
     } else if (state.level === 'creative') {
@@ -948,16 +1105,49 @@ function attachResize() {
   });
 }
 function onResize(e) {
-  if(!_rs)return; const nw=Math.max(55,_rs.w0+e.clientX-_rs.x0);
+  if(!_rs)return;
+  const floor=_rs.hs ? Math.max(40,_rs.col._headerMinW||0) : 55;
+  const nw=Math.max(floor,_rs.w0+e.clientX-_rs.x0);
   if(_rs.hs){const cg=document.getElementById(_rs.hs+'ColGroup');const el=cg?cg.querySelector(`col[data-key="${_rs.col.key}"]`):null;if(el)el.style.width=nw+'px';const tbl=document.getElementById(_rs.hs+'Table');if(tbl)tbl.style.width=HS_COLS.reduce((s,c)=>{const e2=cg?cg.querySelector(`col[data-key="${c.key}"]`):null;return s+(e2?parseInt(e2.style.width):(prefs.hsColWidths[c.key]||c.defaultW));},0)+'px';}
   else if(_rs.lp){const el=document.querySelector(`#lpColGroup col[data-key="${_rs.col.key}"]`);if(el)el.style.width=nw+'px';document.getElementById('lpDataTable').style.width=visLpCols().reduce((s,c)=>{const e2=document.querySelector(`#lpColGroup col[data-key="${c.key}"]`);return s+(e2?parseInt(e2.style.width):(prefs.lpColWidths[c.key]||c.defaultW));},0)+'px';}
   else if(_rs.cr){const el=document.querySelector(`#crColGroup col[data-key="${_rs.col.key}"]`);if(el)el.style.width=nw+'px';document.getElementById('crDataTable').style.width=visCrCols().reduce((s,c)=>{const e2=document.querySelector(`#crColGroup col[data-key="${c.key}"]`);return s+(e2?parseInt(e2.style.width):(prefs.crColWidths[c.key]||c.defaultW));},0)+'px';}
   else{const el=document.querySelector(`#colGroup col[data-key="${_rs.col.key}"]`);if(el)el.style.width=nw+'px';document.getElementById('dataTable').style.width=visCols().reduce((s,c)=>{const e2=document.querySelector(`#colGroup col[data-key="${c.key}"]`);return s+(e2?parseInt(e2.style.width):(prefs.colWidths[c.key]||c.defaultW));},0)+'px';}
 }
 function offResize(e) {
-  if(!_rs)return; const nw=Math.max(55,_rs.w0+e.clientX-_rs.x0);
+  if(!_rs)return;
+  const floor=_rs.hs ? Math.max(40,_rs.col._headerMinW||0) : 55;
+  const nw=Math.max(floor,_rs.w0+e.clientX-_rs.x0);
   if(_rs.hs)prefs.hsColWidths[_rs.col.key]=nw; else if(_rs.lp)prefs.lpColWidths[_rs.col.key]=nw; else if(_rs.cr)prefs.crColWidths[_rs.col.key]=nw; else prefs.colWidths[_rs.col.key]=nw;
   savePrefs(prefs); _rs.h.classList.remove('active'); _rs=null; document.removeEventListener('mousemove',onResize); document.removeEventListener('mouseup',offResize);
+}
+// ── HS table height resize ───────────────────────────────────────────────────
+let _rsHt=null;
+function _hsResizeH(e,prefix){
+  e.preventDefault();
+  const wrap=document.getElementById(prefix+'Wrap');
+  if(!wrap)return;
+  const handle=e.currentTarget;
+  handle.classList.add('active');
+  if(!prefs.hsTableHeights)prefs.hsTableHeights={};
+  const h0=prefs.hsTableHeights[prefix]||wrap.offsetHeight||280;
+  _rsHt={prefix,wrap,handle,y0:e.clientY,h0};
+  document.addEventListener('mousemove',_onResizeHt);
+  document.addEventListener('mouseup',_offResizeHt);
+}
+function _onResizeHt(e){
+  if(!_rsHt)return;
+  const nh=Math.max(60,_rsHt.h0+e.clientY-_rsHt.y0);
+  _rsHt.wrap.style.maxHeight=nh+'px';
+}
+function _offResizeHt(e){
+  if(!_rsHt)return;
+  const nh=Math.max(60,_rsHt.h0+e.clientY-_rsHt.y0);
+  prefs.hsTableHeights[_rsHt.prefix]=nh;
+  savePrefs(prefs);
+  _rsHt.handle.classList.remove('active');
+  _rsHt=null;
+  document.removeEventListener('mousemove',_onResizeHt);
+  document.removeEventListener('mouseup',_offResizeHt);
 }
 
 let _dragKey = null;
@@ -1087,62 +1277,82 @@ function renderItems() {
   }
 }
 
-function renderHubspot() {
-  const d = state.hsData; if(!d) return;
+function renderHubspot(d) {
+  // ── Funnel pipeline ─────────────────────────────────────────────────────
+  const s = d.summary;
+  function funnelCard(label, value, pctValue, pctLabel, color, barPct) {
+    const bar = barPct != null
+      ? `<div style="margin-top:12px;background:#ffffff12;border-radius:4px;height:4px;overflow:hidden;"><div style="width:${Math.round(barPct)}%;height:100%;background:${color};border-radius:4px;"></div></div>`
+      : '';
+    const pctBlock = pctValue != null
+      ? `<div style="font-size:1.5rem;font-weight:700;color:${color};line-height:1;margin-top:6px;">${pctValue}%</div>
+         <div style="font-size:.72rem;color:var(--muted);margin-top:2px;">${pctLabel}</div>`
+      : '';
+    return `<div style="flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;">
+      <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">${label}</div>
+      <div style="font-size:2.2rem;font-weight:700;color:${color};line-height:1;">${value != null ? value.toLocaleString() : '—'}</div>
+      ${pctBlock}${bar}</div>`;
+  }
+  document.getElementById('hsFunnel').innerHTML =
+    funnelCard('Booked', s.booked, null,       'booked a meeting', 'var(--text)',   100) +
+    `<div style="display:flex;align-items:center;color:var(--muted);font-size:1.4rem;padding:0 2px;">›</div>` +
+    funnelCard('MQL',    s.mql,    s.mql_rate, 'of booked',        'var(--accent)', s.mql_rate) +
+    `<div style="display:flex;align-items:center;color:var(--muted);font-size:1.4rem;padding:0 2px;">›</div>` +
+    funnelCard('SQL',    s.sql,    s.sql_rate, 'of booked',        '#22c55e',       s.sql_rate);
 
-  // Apply UTM filter
-  const excl = state.hsExcludeNoUtm;
-  let byCamp = (d.by_campaign||[]).filter(r => !excl || r.label !== '(no utm_campaign)');
-  let byCont = (d.by_content||[]).filter(r  => !excl || r.label !== '(no utm_content)');
+  // ── Build draggable panels ───────────────────────────────────────────────
+  const GRIP = `<svg width="10" height="16" viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="3" cy="3" r="1.5" fill="currentColor"/><circle cx="7" cy="3" r="1.5" fill="currentColor"/><circle cx="3" cy="8" r="1.5" fill="currentColor"/><circle cx="7" cy="8" r="1.5" fill="currentColor"/><circle cx="3" cy="13" r="1.5" fill="currentColor"/><circle cx="7" cy="13" r="1.5" fill="currentColor"/></svg>`;
+  const order = hsTableOrder();
+  const panelRow = document.getElementById('hsPanelRow');
+  panelRow.innerHTML = order.map(pkey => {
+    const meta = HS_PANEL_META[pkey];
+    const savedW = prefs.hsPanelWidths?.[pkey];
+    const wStyle = savedW ? `min-width:${savedW}px;max-width:${savedW}px;` : 'flex:1;min-width:280px;';
+    return `<div class="hs-panel" id="hs-panel-${pkey}" data-pkey="${pkey}" style="${wStyle}overflow:hidden;padding-right:6px;position:relative;"
+        ondragover="_hsPanelDragOver(event,'${pkey}')"
+        ondragleave="_hsPanelDragLeave(event)"
+        ondrop="_hsPanelDrop(event,'${pkey}')">
+      <div class="hs-panel-header">
+        <span class="hs-panel-drag" draggable="true" title="Drag to reorder"
+              ondragstart="_hsPanelDragStart(event,'${pkey}')"
+              ondragend="_hsPanelDragEnd(event)">${GRIP}</span>
+        <span class="section-title">${meta.title}</span>
+      </div>
+      <div class="hs-table-wrap table-wrap" id="${pkey}Wrap">
+        <table class="data-table" id="${pkey}Table">
+          <colgroup id="${pkey}ColGroup"></colgroup>
+          <thead id="${pkey}Head"></thead>
+          <tbody id="${pkey}Body"></tbody>
+        </table>
+      </div>
+      <div class="table-resize-h" onmousedown="_hsResizeH(event,'${pkey}')"></div>
+      <div class="panel-resize-e" onmousedown="_hsPanelResizeW(event,'${pkey}')"></div>
+    </div>`;
+  }).join('');
 
-  // Recalculate summary from filtered campaign rows
-  const fSum = byCamp.reduce((acc, r) => {
-    acc.booked    += r.booked;
-    acc.held      += r.held;
-    acc.no_show   += r.no_show;
-    acc.scheduled += r.scheduled;
-    return acc;
-  }, {booked:0, held:0, no_show:0, scheduled:0});
-  fSum.show_rate = fSum.booked ? Math.round(fSum.held / fSum.booked * 1000) / 10 : null;
+  // Apply saved heights
+  order.forEach(pkey => {
+    const wrap = document.getElementById(pkey+'Wrap');
+    if (wrap && prefs.hsTableHeights?.[pkey]) wrap.style.maxHeight = prefs.hsTableHeights[pkey] + 'px';
+  });
 
-  // Sort
-  byCamp = sortHsItems(byCamp, state.hsCampSort);
-  byCont = sortHsItems(byCont, state.hsContSort);
-
-  // Summary cards
-  const hiddenCount = (d.by_campaign||[]).find(r=>r.label==='(no utm_campaign)')?.booked || 0;
-  const toggleLabel = excl
-    ? `<span style="color:var(--muted);font-size:.75rem;cursor:pointer;" onclick="state.hsExcludeNoUtm=false;renderHubspot()">+ Show ${hiddenCount} without UTM</span>`
-    : `<span style="color:var(--muted);font-size:.75rem;cursor:pointer;" onclick="state.hsExcludeNoUtm=true;renderHubspot()">Hide non-UTM</span>`;
-
-  const cards = [
-    {label:'Booked',    value: fSum.booked,    fmt: v=>v},
-    {label:'Held',      value: fSum.held,      fmt: v=>v},
-    {label:'No Show',   value: fSum.no_show,   fmt: v=>v},
-    {label:'Upcoming',  value: fSum.scheduled, fmt: v=>v},
-    {label:'Show Rate', value: fSum.show_rate, fmt: v=>v!=null?v+'%':'—'},
-  ];
-  document.getElementById('hsFunnelCards').innerHTML = cards.map(c=>`
-    <div class="m-card" style="cursor:default;min-width:110px;flex:1;">
-      <div class="m-label">${c.label}</div>
-      <div class="m-value">${c.fmt(c.value)}</div>
-    </div>`).join('') + `<div style="display:flex;align-items:center;padding:0 4px;">${toggleLabel}</div>`;
-
-  const hsRow = item => {
-    const cols = visHsCols();
-    return `<tr>${cols.map(c=>{
-      if(c.key==='label') return `<td style="text-align:left;word-break:break-word;white-space:normal;max-width:300px;" title="${esc(item.label)}">${esc(item.label)}</td>`;
-      if(c.key==='show_rate'){const sr=item.show_rate!=null?item.show_rate+'%':'—';return`<td><span style="font-weight:600;color:${item.show_rate>=50?'var(--green)':'var(--red)'}">${sr}</span></td>`;}
-      return `<td>${item[c.key]??0}</td>`;
-    }).join('')}</tr>`;
-  };
-
-  renderHsTableHeader('hsCamp', 'utm_campaign', state.hsCampSort);
-  renderHsTableHeader('hsCont', 'utm_content',  state.hsContSort);
-
-  const ncols = visHsCols().length;
-  document.getElementById('hsCampBody').innerHTML = byCamp.map(r=>hsRow(r)).join('') || `<tr><td colspan="${ncols}" style="text-align:center;color:var(--muted);padding:20px;">No data</td></tr>`;
-  document.getElementById('hsContBody').innerHTML = byCont.map(r=>hsRow(r)).join('')  || `<tr><td colspan="${ncols}" style="text-align:center;color:var(--muted);padding:20px;">No data</td></tr>`;
+  // ── Shared row renderer & table fill ────────────────────────────────────
+  function hsRow(r) {
+    return visHsCols().map(c => {
+      if (c.key === 'label')    return `<td title="${r.label}">${r.label}</td>`;
+      if (c.key === 'mql_rate') return `<td class="num">${r.mql_rate != null ? r.mql_rate+'%' : '—'}</td>`;
+      if (c.key === 'sql_rate') return `<td class="num">${r.sql_rate != null ? r.sql_rate+'%' : '—'}</td>`;
+      return `<td class="num">${r[c.key] ?? '—'}</td>`;
+    }).join('');
+  }
+  const sortMap   = { hsAttr:state.hsAttrSort, hsCamp:state.hsCampSort, hsCont:state.hsContSort };
+  const dataMap   = { hsAttr:d.by_attribution||[], hsCamp:d.by_campaign||[], hsCont:d.by_content||[] };
+  order.forEach(pkey => {
+    const meta = HS_PANEL_META[pkey];
+    renderHsTableHeader(pkey, meta.labelText, sortMap[pkey]);
+    document.getElementById(pkey+'Body').innerHTML =
+      sortHsItems(dataMap[pkey], sortMap[pkey]).map(r => `<tr>${hsRow(r)}</tr>`).join('');
+  });
 }
 
 function nameCell(r){const risks=(r.risks||[]).map(t=>`<span class="risk-tag${t==='High Cost/Appt'?' appt':''}">⚠ ${t}</span>`).join('');return`<span class="name-text" title="${esc(r.name)}">${esc(r.name)}</span>${risks}`;}
@@ -1337,7 +1547,7 @@ function renderWidgets(){
   widgets.filter(w=>w.type==='bar').forEach(w=>initBarWidget(w,state.data.items||[]));
 }
 function renderWidgetCard(w,items,summary){const titleText=esc(w.config.title||wgtLabel(w.config.metric||'')),sz=w.config.size||'sm',ht=w.config.height||'sm',canH={sm:160,md:240,lg:340}[ht]||160;let inner='';if(w.type==='scorecard'){inner=`<div class="wgt-scorecard-val">${wgtFmt(w.config.metric,summary[w.config.metric])}</div>`;}else if(w.type==='bar'){inner=`<canvas id="wgt-canvas-${w.id}" style="max-height:${canH}px;"></canvas>`;}else if(w.type==='table'){const cols=w.config.metrics?.length?w.config.metrics:['spend','leads','cpl'],limit=w.config.limit||5,sortKey=w.config.sortBy||cols[0]||'spend',dir=w.config.sortDir||'desc',sorted=[...items].sort((a,b)=>dir==='asc'?(a[sortKey]||0)-(b[sortKey]||0):(b[sortKey]||0)-(a[sortKey]||0)).slice(0,limit),heads=`<tr><th><span class="wgt-nc">Nome</span></th>${cols.map(c=>`<th>${wgtLabel(c)}</th>`).join('')}</tr>`,rows=sorted.map(r=>`<tr><td><span class="wgt-nc" title="${esc(r.name)}">${esc(r.name)}</span></td>${cols.map(c=>`<td>${wgtFmt(c,r[c])}</td>`).join('')}</tr>`).join('');inner=`<div style="overflow-y:auto;max-height:${canH}px;"><table class="wgt-tbl"><thead>${heads}</thead><tbody>${rows}</tbody></table></div>`;}return`<div class="widget-card" data-size="${sz}" data-h="${ht}"><div class="wgt-actions"><button class="wgt-action-btn" onclick="openWidgetConfig('${w.id}')">✎</button><button class="wgt-action-btn del" onclick="deleteWidget('${w.id}')">✕</button></div><div class="wgt-label">${titleText}</div>${inner}</div>`;}
-function initBarWidget(w,items){const canvas=document.getElementById(`wgt-canvas-${w.id}`);if(!canvas)return;const metric=w.config.metric||'spend',limit=w.config.limit||5,dir=w.config.sortDir||'desc',sorted=[...items].filter(r=>r[metric]!=null).sort((a,b)=>dir==='asc'?(a[metric]||0)-(b[metric]||0):(b[metric]||0)-(a[metric]||0)).slice(0,limit);_wgtCharts[w.id]=new Chart(canvas,{type:'bar',data:{labels:sorted.map(r=>r.name.length>24?r.name.slice(0,24)+'…':r.name),datasets:[{data:sorted.map(r=>r[metric]||0),backgroundColor:'#ff4d0077',borderColor:'#ff4d00',borderWidth:2,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#ffffff10'},ticks:{color:'#888',font:{size:10},maxRotation:40}},y:{grid:{color:'#ffffff10'},ticks:{color:'#888',font:{size:10}}}}}});}
+function initBarWidget(w,items){const canvas=document.getElementById(`wgt-canvas-${w.id}`);if(!canvas)return;const metric=w.config.metric||'spend',limit=w.config.limit||5,dir=w.config.sortDir||'desc',sorted=[...items].filter(r=>r[metric]!=null).sort((a,b)=>dir==='asc'?(a[metric]||0)-(b[metric]||0):(b[metric]||0)-(a[metric]||0)).slice(0,limit);_wgtCharts[w.id]=new Chart(canvas,{type:'bar',data:{labels:sorted.map(r=>r.name.length>24?r.name.slice(0,24)+'…':r.name),datasets:[{data:sorted.map(r=>r[metric]||0),backgroundColor:'#ede8d055',borderColor:'#ede8d0',borderWidth:2,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#ffffff10'},ticks:{color:'#888',font:{size:10},maxRotation:40}},y:{grid:{color:'#ffffff10'},ticks:{color:'#888',font:{size:10}}}}}});}
 function openWidgetPicker(){document.getElementById('widgetPickerOverlay').classList.add('open');}
 function closeWidgetPicker(){document.getElementById('widgetPickerOverlay').classList.remove('open');}
 function toggleWgtPanel(){const panel=document.getElementById('wgtPanel'),tab=document.getElementById('wgtPanelTab');panel.classList.toggle('open');tab.classList.toggle('panel-open');localStorage.setItem('scaleArmyWgtPanel',panel.classList.contains('open')?'1':'0');}
@@ -1363,19 +1573,226 @@ function openWidgetConfigForm(type,config){
 function closeWidgetConfig(){document.getElementById('wgtConfigOverlay').classList.remove('open');_wgtEdit=null;}
 function saveWidgetConfig(){if(!_wgtEdit)return;const{id,type}=_wgtEdit,config={title:document.getElementById('wCfgTitle')?.value.trim()||''};config.size=document.querySelector('#wCfgSize .wgt-size-btn.active')?.dataset.s||'sm';config.height=document.querySelector('#wCfgHeight .wgt-size-btn.active')?.dataset.s||'sm';const sortRadio=document.querySelector('input[name="wSort"]:checked');if(sortRadio)config.sortDir=sortRadio.value;if(type==='scorecard'||type==='bar')config.metric=document.getElementById('wCfgMetric')?.value||'spend';if(type==='bar'||type==='table')config.limit=parseInt(document.getElementById('wCfgLimit')?.value)||5;if(type==='table'){config.sortBy=document.getElementById('wCfgSortBy')?.value||'spend';const checked=[...document.querySelectorAll('#wCfgCols input[type=checkbox]:checked')].map(cb=>cb.value);config.metrics=checked.length?checked:['spend'];}const widgets=getActivePageWidgets();if(id){const w=widgets.find(x=>x.id===id);if(w)w.config=config;}else{widgets.push({id:'w_'+Date.now(),type,config});}saveActivePageWidgets(widgets);closeWidgetConfig();renderWidgets();}
 
-// Boot
+// ── Executive Summary ────────────────────────────────────────────────────────
+let execPreset = 'this_month';
+let execCustomSince = null, execCustomUntil = null;
+
+// ── Editable panel titles (localStorage persistence) ─────────────────────────
+const EDITABLE_IDS = ['pt-11','pt-12'];
+function initEditableTitles() {
+  EDITABLE_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const saved = localStorage.getItem('exec_title_v2_' + id);
+    if (saved) el.innerHTML = saved;
+    el.addEventListener('blur', () => {
+      localStorage.setItem('exec_title_v2_' + id, el.innerHTML);
+    });
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    });
+  });
+}
+initEditableTitles();
+
+function switchSection(section) {
+  const isExec = section === 'executive';
+  document.getElementById('executiveView').style.display = isExec ? '' : 'none';
+  document.getElementById('metaView').style.display      = isExec ? 'none' : '';
+  document.getElementById('navExec').style.borderBottomColor = isExec ? 'var(--accent)' : 'transparent';
+  document.getElementById('navExec').style.color             = isExec ? 'var(--accent)' : 'var(--muted)';
+  document.getElementById('navMeta').style.borderBottomColor = isExec ? 'transparent' : 'var(--accent)';
+  document.getElementById('navMeta').style.color             = isExec ? 'var(--muted)' : 'var(--accent)';
+  if (isExec) loadExec();
+}
+
+function setExecPreset(btn) {
+  document.querySelectorAll('#execPresetTabs .tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  execPreset = btn.dataset.ep;
+  execCustomSince = null; execCustomUntil = null;
+  edrUpdateLabel();
+  loadExec();
+}
+
+async function loadExec() {
+  document.getElementById('execFunnelContent').innerHTML = '<div style="color:var(--muted);font-size:.82rem;">Loading…</div>';
+  document.getElementById('execSpendContent').innerHTML  = '<div style="color:var(--muted);font-size:.82rem;">Loading…</div>';
+  const params = (execCustomSince && execCustomUntil)
+    ? `since=${execCustomSince}&until=${execCustomUntil}`
+    : `preset=${execPreset}`;
+  try {
+    const [fr, sr] = await Promise.all([
+      fetch(`/api/executive/funnel?${params}`).then(r => r.json()),
+      fetch(`/api/executive/spend?${params}`).then(r => r.json()),
+    ]);
+    renderExecFunnel(fr);
+    renderExecSpend(sr);
+  } catch(e) {
+    document.getElementById('execFunnelContent').innerHTML = `<span style="color:#f87171">${e.message}</span>`;
+  }
+}
+
+function renderExecFunnel(data) {
+  const stages = data.stages;
+  const maxCount = Math.max(...stages.map(s => s.count || 0), 1);
+  let html = `<table style="width:100%;border-collapse:collapse;">
+    <colgroup><col style="width:190px"><col style="width:100%"><col style="width:70px"><col style="width:100px"></colgroup>
+    <thead><tr>
+      <th style="font-size:.68rem;font-weight:600;color:var(--muted);text-align:left;padding:0 12px 8px 0;text-transform:uppercase;letter-spacing:.04em;">Stage</th>
+      <th style="font-size:.68rem;font-weight:600;color:var(--muted);padding:0 12px 8px 0;text-transform:uppercase;letter-spacing:.04em;">Volume</th>
+      <th style="font-size:.68rem;font-weight:600;color:var(--muted);text-align:right;padding:0 12px 8px 0;text-transform:uppercase;letter-spacing:.04em;">Count</th>
+      <th style="font-size:.68rem;font-weight:600;color:var(--muted);text-align:right;padding:0 0 8px 0;text-transform:uppercase;letter-spacing:.04em;">% of MB</th>
+    </tr></thead><tbody>`;
+  stages.forEach(s => {
+    const pct = s.count != null ? (s.count / maxCount * 100) : 0;
+    const barInner = s.count != null
+      ? `<div style="height:22px;border-radius:4px;background:var(--accent);opacity:.85;width:${pct}%;position:relative;transition:width .4s;">
+           ${pct > 12 ? `<span style="position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:.75rem;font-weight:700;color:var(--bg);">${s.count.toLocaleString()}</span>` : ''}
+         </div>` : '';
+    const countCell = s.count != null ? `<span style="font-size:.9rem;font-weight:700;">${s.count.toLocaleString()}</span>` : `<span style="color:var(--border)">—</span>`;
+    const convCell  = s.conv_from_mb != null ? `<span style="color:var(--accent);font-weight:600;">${s.conv_from_mb}%</span>` : `<span style="color:var(--border)">—</span>`;
+    html += `<tr>
+      <td style="font-size:.82rem;padding:5px 12px 5px 0;white-space:nowrap;">${s.stage}</td>
+      <td style="padding:5px 12px 5px 0;"><div style="background:var(--border);border-radius:4px;height:22px;overflow:hidden;">${barInner}</div></td>
+      <td style="text-align:right;padding:5px 12px 5px 0;">${countCell}</td>
+      <td style="text-align:right;padding:5px 0;">${convCell}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('execFunnelContent').innerHTML = html;
+}
+
+function renderExecSpend(data) {
+  const fmtMoney = v => v != null ? '$' + v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '<span style="color:var(--border)">—</span>';
+  const fmtCost  = v => v != null ? '<br><span style="font-size:.7rem;color:var(--muted)">$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>' : '';
+  const fmtN     = v => v != null ? v.toLocaleString() : '<span style="color:var(--border)">—</span>';
+  const thStyle  = 'background:var(--bg);color:var(--muted);font-weight:600;font-size:.68rem;text-align:right;padding:7px 10px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;';
+  const tdN      = 'padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;font-size:.8rem;white-space:nowrap;';
+  const tdC      = 'padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;font-size:.75rem;color:var(--muted);white-space:nowrap;';
+  const na       = `<span style="color:var(--border)">—</span>`;
+  let html = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:960px;">
+  <thead><tr>
+    <th style="${thStyle}text-align:left;">Channel</th>
+    <th style="${thStyle}">Spend</th>
+    <th style="${thStyle}">MB</th><th style="${thStyle}">CPMB</th>
+    <th style="${thStyle}">MQL</th><th style="${thStyle}">CPMQL</th>
+    <th style="${thStyle}">MH</th><th style="${thStyle}">CPMH</th>
+    <th style="${thStyle}">SQL</th><th style="${thStyle}">CPSQL</th>
+    <th style="${thStyle}">EL Sent</th>
+    <th style="${thStyle}">EL Signed</th>
+  </tr></thead><tbody>`;
+  data.rows.forEach(r => {
+    const rowStyle = r.total ? 'font-weight:700;' : '';
+    const chStyle  = r.sub ? 'padding-left:20px;color:var(--muted);' : '';
+    html += `<tr style="${rowStyle}${r.total?'border-top:2px solid var(--border);':''}">
+      <td style="${tdN}text-align:left;${chStyle}font-size:.8rem;">${r.channel}</td>
+      <td style="${tdN}">${fmtMoney(r.spend)}</td>
+      <td style="${tdN}">${fmtN(r.mb)}</td>
+      <td style="${tdC}">${fmtMoney(r.cpmb)}</td>
+      <td style="${tdN}">${fmtN(r.mql)}</td>
+      <td style="${tdC}">${fmtMoney(r.cpmql)}</td>
+      <td style="${tdN}">${fmtN(r.mh)}</td>
+      <td style="${tdC}">${fmtMoney(r.cpmh)}</td>
+      <td style="${tdN}">${fmtN(r.sql)}</td>
+      <td style="${tdC}">${fmtMoney(r.cpsql)}</td>
+      <td style="${tdN}">${na}</td>
+      <td style="${tdN}">${na}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  document.getElementById('execSpendContent').innerHTML = html;
+}
+
+// ── Executive date range picker (edr*) ───────────────────────────────────────
+let _edrSince=null,_edrUntil=null,_edrStep=0,_edrSV={year:0,month:0},_edrEV={year:0,month:0};
+const EDR_PRESET_LABELS={today:'Today',last_7d:'Last 7 days',this_month:'This month',last_month:'Last month',last_30d:'Last 30 days',all_time:'All time'};
+function edrUpdateLabel(){
+  const el=document.getElementById('edrLabel');if(!el)return;
+  el.textContent=(execCustomSince&&execCustomUntil)
+    ?`${fmtDateLabel(execCustomSince)} – ${fmtDateLabel(execCustomUntil)}`
+    :(EDR_PRESET_LABELS[execPreset]||execPreset);
+}
+function edrOpen(){
+  const t=todayStr();
+  _edrSince=execCustomSince||t; _edrUntil=execCustomUntil||t; _edrStep=0;
+  const[sy,sm]=_edrSince.split('-').map(Number),[uy,um]=_edrUntil.split('-').map(Number);
+  _edrSV={year:sy,month:sm}; _edrEV={year:uy,month:um};
+  if(_edrSV.year===_edrEV.year&&_edrSV.month===_edrEV.month) _edrEV=drAdvMonth(_edrEV,1);
+  edrRenderCals();
+  document.getElementById('edrPicker').classList.add('open');
+  document.getElementById('edrDisplay').classList.add('open');
+}
+function edrClose(){
+  document.getElementById('edrPicker').classList.remove('open');
+  document.getElementById('edrDisplay').classList.remove('open');
+}
+function edrToggle(){const open=document.getElementById('edrPicker').classList.contains('open');if(open)edrClose();else edrOpen();}
+function edrApply(){
+  if(!_edrSince)return;
+  const until=_edrUntil||_edrSince;
+  execCustomSince=_edrSince<=until?_edrSince:until;
+  execCustomUntil=_edrSince<=until?until:_edrSince;
+  document.querySelectorAll('#execPresetTabs .tab').forEach(b=>b.classList.remove('active'));
+  edrClose(); edrUpdateLabel(); loadExec();
+}
+function edrNavMonth(which,dir){if(which==='start')_edrSV=drAdvMonth(_edrSV,dir);else _edrEV=drAdvMonth(_edrEV,dir);edrRenderCals();}
+function edrRenderCals(){edrRenderCal(_edrSV,'edrStartMonth','edrStartDays');edrRenderCal(_edrEV,'edrEndMonth','edrEndDays');}
+function edrRenderCal(view,monthId,daysId){
+  const{year,month}=view;
+  document.getElementById(monthId).textContent=`${MONTHS_PT_CAPS[month-1]} ${year}`;
+  const today=todayStr(),firstDay=new Date(year,month-1,1).getDay(),numDays=new Date(year,month,0).getDate();
+  let html='';
+  for(let i=0;i<firstDay;i++)html+='<div class="dr-day dr-empty"></div>';
+  for(let d=1;d<=numDays;d++){
+    const ds=`${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const since=_edrSince,until=_edrUntil||_edrSince,[lo,hi]=since<=until?[since,until]:[until,since];
+    let cls='dr-day';
+    if(ds===today)cls+=' dr-today';
+    if(ds===lo&&ds===hi)cls+=' dr-sel-start dr-sel-end';
+    else if(ds===lo)cls+=' dr-sel-start';
+    else if(ds===hi)cls+=' dr-sel-end';
+    else if(ds>lo&&ds<hi)cls+=' dr-in-range';
+    html+=`<button class="${cls}" onclick="edrPickDay('${ds}')">${d}</button>`;
+  }
+  document.getElementById(daysId).innerHTML=html;
+}
+function edrPickDay(ds){if(_edrStep===0){_edrSince=ds;_edrUntil=null;_edrStep=1;}else{_edrUntil=ds;_edrStep=0;}edrRenderCals();}
+document.addEventListener('click',e=>{const wrap=document.getElementById('edrWrap');if(wrap&&!e.composedPath().includes(wrap))edrClose();});
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
 if(localStorage.getItem('scaleArmyWgtPanel')==='1'){document.getElementById('wgtPanel').classList.add('open');document.getElementById('wgtPanelTab').classList.add('panel-open');}
 loadDashPages();
 renderDashTabs();
-if(CONFIGURED){
-  renderAccTabs();
-  load();
-} else {
-  hide('loadingEl');
-  document.getElementById('errBox').textContent = 'Configure META_ACCESS_TOKEN and META_ACCOUNT_IDS in the .env file to continue.';
-  show('errBox');
-}
+
+// Meta view initialised lazily when user switches to it
+let _metaLoaded = false;
+const _origSwitchMeta = () => {
+  if (!_metaLoaded) {
+    _metaLoaded = true;
+    if(CONFIGURED){ renderAccTabs(); load(); }
+    else {
+      hide('loadingEl');
+      document.getElementById('errBox').textContent = 'Configure META_ACCESS_TOKEN and META_ACCOUNT_IDS in the .env file to continue.';
+      show('errBox');
+    }
+  }
+};
+
+// Start on Executive Summary
+edrUpdateLabel();
+switchSection('executive');
 window.addEventListener('beforeunload', saveCurrentPageState);
+
+// Override switchSection to init Meta on first visit
+const _baseSwitchSection = switchSection;
+(function(){
+  const orig = switchSection;
+  switchSection = function(section) {
+    orig(section);
+    if (section === 'meta') _origSwitchMeta();
+  };
+})();
 </script>
 </body>
 </html>
