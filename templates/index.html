@@ -628,6 +628,40 @@
       <button class="tab" data-mp="last_30d"   onclick="setMpPreset(this)">30 days</button>
       <button class="tab" data-mp="all_time"   onclick="setMpPreset(this)">All time</button>
     </div>
+    <div class="dr-wrap" id="mpdrWrap">
+      <button class="dr-display" id="mpdrDisplay" onclick="mpdrToggle()">
+        <span id="mpdrLabel">This month</span>
+        <span class="dr-arrow">▾</span>
+      </button>
+      <div class="dr-picker" id="mpdrPicker">
+        <div class="dr-calendars">
+          <div class="dr-cal">
+            <span class="dr-cal-label">Start date</span>
+            <div class="dr-cal-nav">
+              <button class="dr-nav-btn" onclick="mpdrNavMonth('start',-1)">‹</button>
+              <span class="dr-cal-nav-label" id="mpdrStartMonth"></span>
+              <button class="dr-nav-btn" onclick="mpdrNavMonth('start',1)">›</button>
+            </div>
+            <div class="dr-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+            <div class="dr-days" id="mpdrStartDays"></div>
+          </div>
+          <div class="dr-cal">
+            <span class="dr-cal-label">End date</span>
+            <div class="dr-cal-nav">
+              <button class="dr-nav-btn" onclick="mpdrNavMonth('end',-1)">‹</button>
+              <span class="dr-cal-nav-label" id="mpdrEndMonth"></span>
+              <button class="dr-nav-btn" onclick="mpdrNavMonth('end',1)">›</button>
+            </div>
+            <div class="dr-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+            <div class="dr-days" id="mpdrEndDays"></div>
+          </div>
+        </div>
+        <div class="dr-actions">
+          <button class="dr-btn-cancel" onclick="mpdrClose()">Cancel</button>
+          <button class="dr-btn-apply" onclick="mpdrApply()">Apply</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Panel 2.1 -->
@@ -2155,14 +2189,71 @@ const _baseSwitchSection = switchSection;
 // ── Meta Ads Performance state ───────────────────────────────────────────────
 let mpPreset = 'this_month';
 let mpCustomSince = null, mpCustomUntil = null;
+const MP_PRESET_LABELS = {today:'Today',last_7d:'Last 7 days',this_month:'This month',last_month:'Last month',last_30d:'Last 30 days',all_time:'All time'};
+
+function mpdrUpdateLabel() {
+  const el = document.getElementById('mpdrLabel'); if (!el) return;
+  el.textContent = (mpCustomSince && mpCustomUntil)
+    ? `${fmtDateLabel(mpCustomSince)} – ${fmtDateLabel(mpCustomUntil)}`
+    : (MP_PRESET_LABELS[mpPreset] || mpPreset);
+}
 
 function setMpPreset(btn) {
   document.querySelectorAll('#mpPresetTabs .tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   mpPreset = btn.dataset.mp;
   mpCustomSince = null; mpCustomUntil = null;
+  mpdrUpdateLabel();
   loadMetaPerf();
 }
+
+let _mpdrSince=null,_mpdrUntil=null,_mpdrStep=0,_mpdrSV={year:0,month:0},_mpdrEV={year:0,month:0};
+function mpdrOpen() {
+  const t = todayStr();
+  _mpdrSince = mpCustomSince||t; _mpdrUntil = mpCustomUntil||t; _mpdrStep = 0;
+  const [sy,sm] = _mpdrSince.split('-').map(Number), [uy,um] = _mpdrUntil.split('-').map(Number);
+  _mpdrSV = {year:sy,month:sm}; _mpdrEV = {year:uy,month:um};
+  if (_mpdrSV.year===_mpdrEV.year && _mpdrSV.month===_mpdrEV.month) _mpdrEV = drAdvMonth(_mpdrEV,1);
+  mpdrRenderCals();
+  document.getElementById('mpdrPicker').classList.add('open');
+  document.getElementById('mpdrDisplay').classList.add('open');
+}
+function mpdrClose() {
+  document.getElementById('mpdrPicker').classList.remove('open');
+  document.getElementById('mpdrDisplay').classList.remove('open');
+}
+function mpdrToggle() { const open=document.getElementById('mpdrPicker').classList.contains('open'); if(open)mpdrClose();else mpdrOpen(); }
+function mpdrApply() {
+  if (!_mpdrSince) return;
+  const until = _mpdrUntil||_mpdrSince;
+  mpCustomSince = _mpdrSince<=until ? _mpdrSince : until;
+  mpCustomUntil = _mpdrSince<=until ? until : _mpdrSince;
+  document.querySelectorAll('#mpPresetTabs .tab').forEach(b=>b.classList.remove('active'));
+  mpdrClose(); mpdrUpdateLabel(); loadMetaPerf();
+}
+function mpdrNavMonth(which,dir) { if(which==='start')_mpdrSV=drAdvMonth(_mpdrSV,dir);else _mpdrEV=drAdvMonth(_mpdrEV,dir); mpdrRenderCals(); }
+function mpdrRenderCals() { mpdrRenderCal(_mpdrSV,'mpdrStartMonth','mpdrStartDays'); mpdrRenderCal(_mpdrEV,'mpdrEndMonth','mpdrEndDays'); }
+function mpdrRenderCal(view,monthId,daysId) {
+  const {year,month} = view;
+  document.getElementById(monthId).textContent = `${MONTHS_PT_CAPS[month-1]} ${year}`;
+  const today=todayStr(),firstDay=new Date(year,month-1,1).getDay(),numDays=new Date(year,month,0).getDate();
+  let html='';
+  for(let i=0;i<firstDay;i++) html+='<div class="dr-day dr-empty"></div>';
+  for(let d=1;d<=numDays;d++){
+    const ds=`${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const since=_mpdrSince,until=_mpdrUntil||_mpdrSince,[lo,hi]=since<=until?[since,until]:[until,since];
+    let cls='dr-day';
+    if(ds===today) cls+=' dr-today';
+    if(ds===lo&&ds===hi) cls+=' dr-sel-start dr-sel-end';
+    else if(ds===lo) cls+=' dr-sel-start';
+    else if(ds===hi) cls+=' dr-sel-end';
+    else if(ds>lo&&ds<hi) cls+=' dr-in-range';
+    html+=`<button class="${cls}" onclick="mpdrPickDay('${ds}')">${d}</button>`;
+  }
+  document.getElementById(daysId).innerHTML = html;
+}
+function mpdrPickDay(ds) { if(_mpdrStep===0){_mpdrSince=ds;_mpdrUntil=null;_mpdrStep=1;}else{_mpdrUntil=ds;_mpdrStep=0;} mpdrRenderCals(); }
+document.addEventListener('click',e=>{const wrap=document.getElementById('mpdrWrap');if(wrap&&!e.composedPath().includes(wrap))mpdrClose();});
 
 function _mpQS() {
   if (mpCustomSince && mpCustomUntil) return `since=${mpCustomSince}&until=${mpCustomUntil}`;
