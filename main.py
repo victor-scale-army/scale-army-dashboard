@@ -1647,13 +1647,15 @@ async def api_metaperf_campaigns(preset: str = "this_month", since: str = None, 
                 m = _row_metrics(row)
                 key = camp_name.lower()
                 if key in meta_raw:
-                    for k in ("spend", "impressions", "link_clicks", "leads"):
+                    for k in ("spend", "impressions", "link_clicks", "leads", "leads_form", "leads_web"):
                         meta_raw[key][k] += m[k]
                 else:
                     meta_raw[key] = {"name": camp_name, "spend": m["spend"],
                                      "impressions": m["impressions"],
                                      "link_clicks": m["link_clicks"],
-                                     "leads": m["leads"]}
+                                     "leads": m["leads"],
+                                     "leads_form": m["leads_form"],
+                                     "leads_web": m["leads_web"]}
 
     # Build canonical mapping: campaign number → canonical display name
     canonical_by_num = _build_canonical_by_num(meta_raw)
@@ -1667,8 +1669,8 @@ async def api_metaperf_campaigns(preset: str = "this_month", since: str = None, 
         canon_name = canonical_by_num.get(_camp_num(key) or "", v["name"]) if ck in {c.lower() for c in canonical_by_num.values()} else v["name"]
         if ck not in meta_by_canon:
             meta_by_canon[ck] = {"name": canon_name, "spend": 0.0,
-                                  "impressions": 0, "link_clicks": 0, "leads": 0}
-        for k in ("spend", "impressions", "link_clicks", "leads"):
+                                  "impressions": 0, "link_clicks": 0, "leads": 0, "leads_form": 0, "leads_web": 0}
+        for k in ("spend", "impressions", "link_clicks", "leads", "leads_form", "leads_web"):
             meta_by_canon[ck][k] += v[k]
     # Recalculate derived fields
     for v in meta_by_canon.values():
@@ -1726,9 +1728,10 @@ async def api_metaperf_campaigns(preset: str = "this_month", since: str = None, 
             "link_clicks":    meta.get("link_clicks") or None,
             "ctr":            meta.get("ctr") or None,
             "cpc":            meta.get("cpc") or None,
-            "leads_platform": meta.get("leads") or None,
+            "leads_platform": meta.get("leads_web") or None,
+            "leads_form":     meta.get("leads_form") or None,
             "leads_hs":       nl  or None,
-            "cpl":            cp(nl),
+            "cpl":            cp(meta.get("leads_form") or 0 if (meta.get("leads_form") or 0) > 0 else nl),
             "mb":             mb  or None,
             "cpmb":           cp(mb),
             "mql":            mql or None,
@@ -1793,7 +1796,7 @@ async def api_metaperf_adsets(preset: str = "this_month", since: str = None, unt
                 ck  = _canonical_key(camp_name.lower())
                 key = (ck, adset_name.lower())
                 if key in meta_adsets:
-                    for k in ("spend", "impressions", "link_clicks", "leads"):
+                    for k in ("spend", "impressions", "link_clicks", "leads", "leads_form", "leads_web"):
                         meta_adsets[key][k] += m[k]
                 else:
                     meta = meta_meta.get(adset_name, {})
@@ -1808,6 +1811,8 @@ async def api_metaperf_adsets(preset: str = "this_month", since: str = None, unt
                         "impressions":     m["impressions"],
                         "link_clicks":     m["link_clicks"],
                         "leads":           m["leads"],
+                        "leads_form":      m["leads_form"],
+                        "leads_web":       m["leads_web"],
                     }
         for v in meta_adsets.values():
             sp = v["spend"]; im = v["impressions"]; lc = v["link_clicks"]
@@ -1870,9 +1875,10 @@ async def api_metaperf_adsets(preset: str = "this_month", since: str = None, unt
             "link_clicks":    meta_m.get("link_clicks") or None,
             "ctr":            meta_m.get("ctr") or None,
             "cpc":            meta_m.get("cpc") or None,
-            "leads_platform": meta_m.get("leads") or None,
+            "leads_platform": meta_m.get("leads_web") or None,
+            "leads_form":     meta_m.get("leads_form") or None,
             "leads_hs":       nl  or None,
-            "cpl":            cp(nl),
+            "cpl":            cp(meta_m.get("leads_form") or 0 if (meta_m.get("leads_form") or 0) > 0 else nl),
             "mb":             mb  or None,
             "cpmb":           cp(mb),
             "mql":            mql or None,
@@ -1912,7 +1918,7 @@ async def api_metaperf_ads(preset: str = "this_month", since: str = None, until:
                 m   = _row_metrics(row)
                 key = ad_name.lower()
                 if key in meta_ads:
-                    for k in ("spend", "impressions", "link_clicks", "leads", "leads_form", "video_views"):
+                    for k in ("spend", "impressions", "link_clicks", "leads", "leads_form", "leads_web", "video_views"):
                         meta_ads[key][k] += m[k]
                 else:
                     meta_ads[key] = {
@@ -1922,6 +1928,7 @@ async def api_metaperf_ads(preset: str = "this_month", since: str = None, until:
                         "link_clicks": m["link_clicks"],
                         "leads":       m["leads"],
                         "leads_form":  m["leads_form"],
+                        "leads_web":   m["leads_web"],
                         "video_views": m["video_views"],
                     }
         for v in meta_ads.values():
@@ -1973,9 +1980,10 @@ async def api_metaperf_ads(preset: str = "this_month", since: str = None, until:
         mh  = hs_m.get("mh",0);  sql = hs_m.get("sql",0)
         els = hs_m.get("el_sent",0); eli = hs_m.get("el_signed",0)
         def cp(den): return round(sp / den, 2) if sp and den else None
-        is_instant   = (meta_m.get("leads_form") or 0) > 0
-        leads_plat   = meta_m.get("leads") or 0
-        cpl_den      = leads_plat if is_instant else nl
+        leads_form_v = meta_m.get("leads_form") or 0
+        leads_web_v  = meta_m.get("leads_web")  or 0
+        is_instant   = leads_form_v > 0
+        cpl_den      = leads_form_v if is_instant else nl
         rows.append({
             "ad_name":        meta_m.get("ad_name") or key,
             "spend":          round(sp, 2) if sp else None,
@@ -1983,8 +1991,8 @@ async def api_metaperf_ads(preset: str = "this_month", since: str = None, until:
             "link_clicks":    meta_m.get("link_clicks") or None,
             "ctr":            meta_m.get("ctr") or None,
             "cpc":            meta_m.get("cpc") or None,
-            "leads_platform": leads_plat or None,
-            "leads_form":     meta_m.get("leads_form") or None,
+            "leads_platform": leads_web_v or None,
+            "leads_form":     leads_form_v or None,
             "leads_hs":       nl  or None,
             "cpl":            cp(cpl_den),
             "mb":             mb  or None,
