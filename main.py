@@ -83,7 +83,7 @@ def _compute_period(preset: str, since: str, until: str):
         u = first_this - timedelta(days=1); s = u.replace(day=1)
         pu2 = s - timedelta(days=1); ps2 = pu2.replace(day=1)
     elif p == "all_time":
-        s = _date(2000, 1, 1); u = today
+        s = today - timedelta(days=37*30); u = today   # Meta API ~37 month limit
         ps2 = _date(1999, 1, 1); pu2 = _date(1999, 12, 31)
     else:
         s, u = today - timedelta(days=6), today

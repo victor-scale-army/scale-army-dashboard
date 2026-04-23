@@ -2404,7 +2404,7 @@ function renderMpAdsets(rows) {
   const tfoot = `<tr class="total-row">${COLS.map(c=>`<td style="text-align:${c.align||'center'};font-weight:700;">${c.fmt(tot[c.key])}</td>`).join('')}</tr>`;
 
   document.getElementById('mpAdsetContent').innerHTML = `
-    <div class="table-wrap" style="overflow-x:auto;">
+    <div class="table-wrap" style="overflow:auto;max-height:70vh;">
       <table class="data-table" style="min-width:1600px;">
         <thead>${thead}</thead>
         <tbody>${tbody}${tfoot}</tbody>
@@ -2467,7 +2467,7 @@ function renderMpAds(rows) {
   const tfoot = `<tr class="total-row">${COLS.map(c=>`<td style="text-align:${c.align||'center'};font-weight:700;">${c.fmt(tot[c.key])}</td>`).join('')}</tr>`;
 
   document.getElementById('mpAdContent').innerHTML = `
-    <div class="table-wrap" style="overflow-x:auto;">
+    <div class="table-wrap" style="overflow:auto;max-height:70vh;">
       <table class="data-table" style="min-width:1600px;">
         <thead>${thead}</thead>
         <tbody>${tbody}${tfoot}</tbody>
