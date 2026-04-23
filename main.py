@@ -1912,7 +1912,7 @@ async def api_metaperf_ads(preset: str = "this_month", since: str = None, until:
                 m   = _row_metrics(row)
                 key = ad_name.lower()
                 if key in meta_ads:
-                    for k in ("spend", "impressions", "link_clicks", "leads", "video_views"):
+                    for k in ("spend", "impressions", "link_clicks", "leads", "leads_form", "video_views"):
                         meta_ads[key][k] += m[k]
                 else:
                     meta_ads[key] = {
@@ -1921,6 +1921,7 @@ async def api_metaperf_ads(preset: str = "this_month", since: str = None, until:
                         "impressions": m["impressions"],
                         "link_clicks": m["link_clicks"],
                         "leads":       m["leads"],
+                        "leads_form":  m["leads_form"],
                         "video_views": m["video_views"],
                     }
         for v in meta_ads.values():
@@ -1972,17 +1973,19 @@ async def api_metaperf_ads(preset: str = "this_month", since: str = None, until:
         mh  = hs_m.get("mh",0);  sql = hs_m.get("sql",0)
         els = hs_m.get("el_sent",0); eli = hs_m.get("el_signed",0)
         def cp(den): return round(sp / den, 2) if sp and den else None
+        is_instant   = (meta_m.get("leads_form") or 0) > 0
+        leads_plat   = meta_m.get("leads") or 0
+        cpl_den      = leads_plat if is_instant else nl
         rows.append({
             "ad_name":        meta_m.get("ad_name") or key,
-            "hook_rate":      meta_m.get("hook_rate"),
             "spend":          round(sp, 2) if sp else None,
             "impressions":    meta_m.get("impressions") or None,
             "link_clicks":    meta_m.get("link_clicks") or None,
             "ctr":            meta_m.get("ctr") or None,
             "cpc":            meta_m.get("cpc") or None,
-            "leads_platform": meta_m.get("leads") or None,
+            "leads_platform": leads_plat or None,
             "leads_hs":       nl  or None,
-            "cpl":            cp(nl),
+            "cpl":            cp(cpl_den),
             "mb":             mb  or None,
             "cpmb":           cp(mb),
             "mql":            mql or None,
