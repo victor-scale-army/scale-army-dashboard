@@ -1984,6 +1984,7 @@ async def api_metaperf_ads(preset: str = "this_month", since: str = None, until:
             "ctr":            meta_m.get("ctr") or None,
             "cpc":            meta_m.get("cpc") or None,
             "leads_platform": leads_plat or None,
+            "leads_form":     meta_m.get("leads_form") or None,
             "leads_hs":       nl  or None,
             "cpl":            cp(cpl_den),
             "mb":             mb  or None,

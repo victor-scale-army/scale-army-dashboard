@@ -2420,7 +2420,8 @@ function renderMpAds(rows) {
   const COLS = [
     {key:'ad_name',        label:'Ad Name',          fmt: v => v ?? '—',  align:'left', minW:'200px'},
     {key:'spend',          label:'Spend',             fmt: numR},
-    {key:'leads_platform', label:'Leads (platform)',  fmt: numN},
+    {key:'leads_platform', label:'Leads (LP)',         fmt: numN},
+    {key:'leads_form',     label:'Leads (Meta Ads)',  fmt: numN},
     {key:'leads_hs',       label:'Leads (HubSpot)',   fmt: numN},
     {key:'cpl',            label:'CPL',               fmt: numR},
     {key:'mb',             label:'MB',                fmt: numN},
@@ -2453,10 +2454,9 @@ function renderMpAds(rows) {
     return `<tr>${cells}</tr>`;
   }).join('');
 
-  const SUM_KEYS = ['spend','leads_platform','leads_hs','mb','mql','mh','sql','el_sent','el_signed'];
+  const SUM_KEYS = ['spend','leads_platform','leads_form','leads_hs','mb','mql','mh','sql','el_sent','el_signed'];
   const tot = {}; SUM_KEYS.forEach(k => { tot[k] = rows.reduce((s,r) => s+(r[k]||0), 0); });
   const sp = tot.spend;
-  tot.hook_rate     = null;  // not meaningful as a sum
   tot.cpl           = tot.leads_hs     ? +(sp/tot.leads_hs).toFixed(2)     : null;
   tot.cpmb          = tot.mb           ? +(sp/tot.mb).toFixed(2)           : null;
   tot.cpmql         = tot.mql          ? +(sp/tot.mql).toFixed(2)          : null;
