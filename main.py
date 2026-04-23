@@ -824,6 +824,28 @@ _hs_mem:    dict = {"contacts": [], "loaded_at": 0.0}   # MB tab
 _hs_nl_mem: dict = {"contacts": [], "loaded_at": 0.0}   # New Leads tab
 _hs_mh_mem: dict = {"contacts": [], "loaded_at": 0.0}   # MH tab
 
+# Ad name aliases: utm_content (old name) → current Meta ad_name
+_ad_aliases_mem: dict = {"aliases": {}, "loaded_at": 0.0}
+
+def _load_ad_aliases() -> dict:
+    """Return {utm_content.lower(): ad_name.lower()} from the ad_aliases sheet tab."""
+    import httpx as _httpx, time as _time
+    if _time.time() - _ad_aliases_mem["loaded_at"] < _HS_CACHE_TTL:
+        return _ad_aliases_mem["aliases"]
+    try:
+        rows = _httpx.get(_hs_url("ad_aliases"), follow_redirects=True, timeout=15).json()
+        aliases = {}
+        for row in rows:
+            utm = str(row.get("utm_content", "") or "").strip()
+            name = str(row.get("ad_name", "") or "").strip()
+            if utm and name:
+                aliases[utm.lower()] = name.lower()
+        _ad_aliases_mem["aliases"] = aliases
+        _ad_aliases_mem["loaded_at"] = _time.time()
+    except Exception:
+        pass
+    return _ad_aliases_mem["aliases"]
+
 def _normalize_meta_attr(attr: str, utm_campaign: str) -> str:
     """Split generic 'Meta Ads' (and Facebook variants) into Callingly vs On-site/Conversion."""
     a = attr.lower()
@@ -1912,9 +1934,12 @@ async def api_metaperf_ads(preset: str = "this_month", since: str = None, until:
     nl_all = _load_hs_new_leads(d_since, d_until, mkt_only=False)
     mb_all = _load_hs_contacts(d_since, d_until, mkt_only=False)
     mh_all = _load_hs_mh(d_since, d_until, mkt_only=False)
+    _aliases = _load_ad_aliases()
 
     hs_by_content: dict = {}
-    def _ck(c): return c.get("utm_content", "").lower()
+    def _ck(c):
+        raw = c.get("utm_content", "").lower()
+        return _aliases.get(raw, raw)
 
     for c in nl_all:
         if c["attribution"] not in _META_ATTRS: continue
