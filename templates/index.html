@@ -2301,7 +2301,7 @@ function renderMpCampaigns(rows) {
   ];
 
   const thead = `<tr>${COLS.map(c =>
-    `<th style="white-space:nowrap;text-align:${c.align||'center'};${c.minW?`min-width:${c.minW};`:''}">${c.label}</th>`
+    `<th style="position:sticky;top:0;z-index:2;background:var(--surface);white-space:nowrap;text-align:${c.align||'center'};${c.minW?`min-width:${c.minW};`:''}">${c.label}</th>`
   ).join('')}</tr>`;
 
   if (!rows.length) {
@@ -2373,7 +2373,7 @@ function renderMpAdsets(rows) {
   ];
 
   const thead = `<tr>${COLS.map(c =>
-    `<th style="white-space:nowrap;text-align:${c.align||'center'};${c.minW?`min-width:${c.minW};`:''}">${c.label}</th>`
+    `<th style="position:sticky;top:0;z-index:2;background:var(--surface);white-space:nowrap;text-align:${c.align||'center'};${c.minW?`min-width:${c.minW};`:''}">${c.label}</th>`
   ).join('')}</tr>`;
 
   if (!rows.length) {
@@ -2438,7 +2438,7 @@ function renderMpAds(rows) {
   ];
 
   const thead = `<tr>${COLS.map(c =>
-    `<th style="white-space:nowrap;text-align:${c.align||'center'};${c.minW?`min-width:${c.minW};`:''}">${c.label}</th>`
+    `<th style="position:sticky;top:0;z-index:2;background:var(--surface);white-space:nowrap;text-align:${c.align||'center'};${c.minW?`min-width:${c.minW};`:''}">${c.label}</th>`
   ).join('')}</tr>`;
 
   if (!rows.length) {
