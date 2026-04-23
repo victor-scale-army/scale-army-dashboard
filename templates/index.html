@@ -289,9 +289,13 @@
       style="padding:10px 18px;border:none;background:none;font-size:.82rem;font-weight:600;cursor:pointer;border-bottom:2px solid var(--accent);color:var(--accent);margin-bottom:-2px;transition:color .15s;">
       Executive Summary
     </button>
+    <button id="navMetaPerf" onclick="switchSection('metaperf')"
+      style="padding:10px 18px;border:none;background:none;font-size:.82rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);margin-bottom:-2px;transition:color .15s;">
+      Meta Ads Performance
+    </button>
     <button id="navMeta" onclick="switchSection('meta')"
       style="padding:10px 18px;border:none;background:none;font-size:.82rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);margin-bottom:-2px;transition:color .15s;">
-      Meta Ads
+      Meta Ads (API)
     </button>
   </div>
 
@@ -540,7 +544,6 @@
           <button class="tab"        data-l="adset"     onclick="setLevel(this)">Ad Sets</button>
           <button class="tab"        data-l="creative"  onclick="setLevel(this)">Creatives</button>
           <button class="tab"        data-l="lp"        onclick="setLevel(this)">Landing Pages</button>
-          <button class="tab"        data-l="hubspot"   onclick="setLevel(this)">HubSpot</button>
         </div>
       </div>
       <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
@@ -606,16 +609,75 @@
       </div>
     </div>
 
-    <div id="hubspotView" style="display:none;">
-      <div id="hsFunnel" style="display:flex;gap:12px;align-items:stretch;margin-bottom:20px;flex-wrap:wrap;"></div>
-      <div id="hsPanelRow" style="display:flex;flex-wrap:wrap;align-items:flex-start;"></div>
-    </div>
-
     <div id="widgetsSection" style="display:none; margin-top:28px;">
       <div class="widget-grid" id="widgetGrid"></div>
     </div>
   </div>
 </div><!-- end metaView -->
+
+<!-- ── Meta Ads Performance view ──────────────────────────────────────── -->
+<div id="metaPerfView" style="display:none; padding:24px 20px 60px;">
+
+  <!-- Date controls -->
+  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:24px;">
+    <div class="tabs" id="mpPresetTabs">
+      <button class="tab" data-mp="today"      onclick="setMpPreset(this)">Today</button>
+      <button class="tab" data-mp="last_7d"    onclick="setMpPreset(this)">7 days</button>
+      <button class="tab active" data-mp="this_month" onclick="setMpPreset(this)">This month</button>
+      <button class="tab" data-mp="last_month" onclick="setMpPreset(this)">Last month</button>
+      <button class="tab" data-mp="last_30d"   onclick="setMpPreset(this)">30 days</button>
+      <button class="tab" data-mp="all_time"   onclick="setMpPreset(this)">All time</button>
+    </div>
+  </div>
+
+  <!-- Panel 2.1 -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+    <div style="font-size:.9rem;font-weight:600;margin-bottom:16px;">Meta Funnel Overview (On-Site vs Callingly)</div>
+    <div id="mpFunnelContent"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
+  </div>
+
+  <!-- Panel 2.2 -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+    <div style="font-size:.9rem;font-weight:600;margin-bottom:16px;">Campaign-Level Breakdown</div>
+    <div id="mpCampContent"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
+  </div>
+
+  <!-- Panel 2.3 -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+    <div style="font-size:.9rem;font-weight:600;margin-bottom:16px;">Ad Set-Level Breakdown</div>
+    <div id="mpAdsetContent"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
+  </div>
+
+  <!-- Panel 2.4 -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+    <div style="font-size:.9rem;font-weight:600;margin-bottom:16px;">Creative (Ad)-Level Breakdown</div>
+    <div id="mpAdContent"><div style="color:var(--muted);font-size:.82rem;">Loading…</div></div>
+  </div>
+
+  <!-- Panel 2.5 -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+    <div style="font-size:.9rem;font-weight:600;margin-bottom:16px;">On-Site vs Callingly — Volume &amp; Rate Comparison</div>
+    <div id="mpChartsContent">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+        <div style="background:var(--bg);border-radius:8px;padding:12px;"><div style="font-size:.78rem;font-weight:600;margin-bottom:8px;color:var(--muted);">Lead Volume</div><canvas id="mpChart0" height="160"></canvas></div>
+        <div style="background:var(--bg);border-radius:8px;padding:12px;"><div style="font-size:.78rem;font-weight:600;margin-bottom:8px;color:var(--muted);">MB Volume &amp; Rate</div><canvas id="mpChart1" height="160"></canvas></div>
+        <div style="background:var(--bg);border-radius:8px;padding:12px;"><div style="font-size:.78rem;font-weight:600;margin-bottom:8px;color:var(--muted);">MQL Volume &amp; Rate</div><canvas id="mpChart2" height="160"></canvas></div>
+        <div style="background:var(--bg);border-radius:8px;padding:12px;"><div style="font-size:.78rem;font-weight:600;margin-bottom:8px;color:var(--muted);">MH Volume &amp; Show-up Rate</div><canvas id="mpChart3" height="160"></canvas></div>
+        <div style="background:var(--bg);border-radius:8px;padding:12px;"><div style="font-size:.78rem;font-weight:600;margin-bottom:8px;color:var(--muted);">SQL Volume &amp; Rate</div><canvas id="mpChart4" height="160"></canvas></div>
+        <div style="background:var(--bg);border-radius:8px;padding:12px;"><div style="font-size:.78rem;font-weight:600;margin-bottom:8px;color:var(--muted);">CPSQL Comparison</div><canvas id="mpChart5" height="160"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel 2.6 -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:16px;">
+    <div style="font-size:.9rem;font-weight:600;margin-bottom:16px;">Daily Trend (Meta)</div>
+    <div id="mpTrendContent">
+      <canvas id="mpTrendChart" height="80"></canvas>
+    </div>
+  </div>
+
+</div><!-- end metaPerfView -->
 
 <!-- Widget panel -->
 <div class="wgt-panel" id="wgtPanel">
@@ -844,7 +906,6 @@ function _hsPanelDrop(e, pkey) {
   if (fi < 0 || ti < 0) return;
   order.splice(fi, 1); order.splice(ti, 0, _hsPanelDragKey);
   prefs.hsTableOrder = order; savePrefs(prefs);
-  if (state.hsData) renderHubspot(state.hsData);
 }
 function _hsPanelDragEnd(e) {
   _hsPanelDragKey = null;
@@ -898,7 +959,7 @@ let _hsDragKey = null;
 function _hsDragStart(e,key){_hsDragKey=key;e.dataTransfer.effectAllowed='move';setTimeout(()=>{const th=e.target.closest('th');if(th)th.classList.add('col-dragging');},0);}
 function _hsDragOver(e,key){if(_hsDragKey&&_hsDragKey!==key){e.preventDefault();e.dataTransfer.dropEffect='move';e.currentTarget.classList.add('col-drag-over');}}
 function _hsDragLeave(e){e.currentTarget.classList.remove('col-drag-over');}
-function _hsDrop(e,key){e.preventDefault();e.currentTarget.classList.remove('col-drag-over');if(!_hsDragKey||_hsDragKey===key)return;const keys=visHsCols().map(c=>c.key);const fi=keys.indexOf(_hsDragKey),ti=keys.indexOf(key);if(fi<0||ti<0)return;keys.splice(fi,1);keys.splice(ti,0,_hsDragKey);prefs.hsColOrder=keys;savePrefs(prefs);if(state.hsData)renderHubspot(state.hsData);}
+function _hsDrop(e,key){e.preventDefault();e.currentTarget.classList.remove('col-drag-over');if(!_hsDragKey||_hsDragKey===key)return;const keys=visHsCols().map(c=>c.key);const fi=keys.indexOf(_hsDragKey),ti=keys.indexOf(key);if(fi<0||ti<0)return;keys.splice(fi,1);keys.splice(ti,0,_hsDragKey);prefs.hsColOrder=keys;savePrefs(prefs);}
 function _hsDragEnd(e){_hsDragKey=null;document.querySelectorAll('.col-dragging,.col-drag-over').forEach(el=>el.classList.remove('col-dragging','col-drag-over'));}
 function hsColSortIcon(colKey, sortState) {
   if(sortState.key!==colKey)return'<span class="th-sort-icon"></span>';
@@ -934,7 +995,6 @@ function renderHsTableHeader(prefix, labelText, sortState) {
 function hsSort(prefix, key) {
   const s = prefix==='hsCamp' ? state.hsCampSort : prefix==='hsAttr' ? state.hsAttrSort : state.hsContSort;
   if(s.key===key){s.dir=s.dir==='desc'?'asc':'desc';}else{s.key=key;s.dir=key==='label'?'asc':'desc';}
-  if(state.hsData)renderHubspot(state.hsData);
 }
 function sortHsItems(items, sortState) {
   const {key,dir}=sortState;
@@ -984,16 +1044,7 @@ async function load() {
   show('loadingEl'); hide('content'); hide('errBox');
   const qs = buildQS();
   try {
-    if (state.level === 'hubspot') {
-      const r = await fetch(`/api/hubspot/funnel?${qs}`);
-      if (!r.ok) { const e = await r.json(); throw new Error(e.detail||'HubSpot error'); }
-      state.hsData = await r.json();
-      hide('metricsGrid'); hide('chartWrap');
-      document.getElementById('periodLabel').textContent = `${fd(state.hsData.since)} → ${fd(state.hsData.until)}`;
-      renderHubspot(state.hsData);
-      show('hubspotView'); hide('tableView'); hide('creativeView'); hide('lpView');
-      hide('loadingEl'); show('content'); updateDrLabel();
-    } else if (state.level === 'creative') {
+    if (state.level === 'creative') {
       const [crRes, dRes] = await Promise.all([fetch(`/api/creatives?${qs}`), fetch(`/api/daily?${qs}`)]);
       if (!crRes.ok) { const e = await crRes.json(); throw new Error(e.detail||'Error'); }
       state.creativeData = await crRes.json(); state.dailyData = dRes.ok ? await dRes.json() : null; state.data = null; state.lpData = null;
@@ -1311,10 +1362,8 @@ function resetMs(){msSelected=null;crStatusFilter='active';document.querySelecto
 
 function renderItems() {
   const q=document.getElementById('searchInp').value.toLowerCase();
-  if(state.level==='hubspot'){
-    show('hubspotView');hide('tableView');hide('creativeView');hide('lpView');
-  } else if(state.level==='creative'){
-    hide('hubspotView');show('creativeView');hide('tableView');hide('lpView');
+  if(state.level==='creative'){
+    show('creativeView');hide('tableView');hide('lpView');
     if(crViewMode==='table'){hide('creativeGrid');show('crTableWrap');renderCrTableHeader();renderCreativeTable(q);}
     else{show('creativeGrid');hide('crTableWrap');renderCreativeGrid(q);}
     if(state.creativeData){
@@ -1323,7 +1372,7 @@ function renderItems() {
       renderChart();
     }
   } else if(state.level==='lp'){
-    hide('hubspotView');show('lpView');hide('tableView');hide('creativeView');
+    show('lpView');hide('tableView');hide('creativeView');
     renderLpTable(q);
     if(state.lpData){
       const filtered=(state.lpData.items||[]).filter(r=>!q||r.lp.toLowerCase().includes(q));
@@ -1331,88 +1380,10 @@ function renderItems() {
       scheduleLpDailyFetch(q);
     }
   } else {
-    hide('hubspotView');show('tableView');hide('creativeView');hide('lpView');
+    show('tableView');hide('creativeView');hide('lpView');
     renderTable(q);
     if(state.data){if(msSelected!==null){const f=filterByMs(state.data?.items||[]).filter(r=>!q||r.name.toLowerCase().includes(q));renderMetrics(computeSummaryFromItems(f),false);}else if(!q){renderMetrics(null,true);}else{const f=(state.data?.items||[]).filter(r=>r.name.toLowerCase().includes(q));renderMetrics(computeSummaryFromItems(f),false);}}
   }
-}
-
-function renderHubspot(d) {
-  // ── Funnel pipeline ─────────────────────────────────────────────────────
-  const s = d.summary;
-  function funnelCard(label, value, pctValue, pctLabel, color, barPct) {
-    const bar = barPct != null
-      ? `<div style="margin-top:12px;background:#ffffff12;border-radius:4px;height:4px;overflow:hidden;"><div style="width:${Math.round(barPct)}%;height:100%;background:${color};border-radius:4px;"></div></div>`
-      : '';
-    const pctBlock = pctValue != null
-      ? `<div style="font-size:1.5rem;font-weight:700;color:${color};line-height:1;margin-top:6px;">${pctValue}%</div>
-         <div style="font-size:.72rem;color:var(--muted);margin-top:2px;">${pctLabel}</div>`
-      : '';
-    return `<div style="flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;">
-      <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">${label}</div>
-      <div style="font-size:2.2rem;font-weight:700;color:${color};line-height:1;">${value != null ? value.toLocaleString() : '—'}</div>
-      ${pctBlock}${bar}</div>`;
-  }
-  document.getElementById('hsFunnel').innerHTML =
-    funnelCard('Booked', s.booked, null,       'booked a meeting', 'var(--text)',   100) +
-    `<div style="display:flex;align-items:center;color:var(--muted);font-size:1.4rem;padding:0 2px;">›</div>` +
-    funnelCard('MQL',    s.mql,    s.mql_rate, 'of booked',        'var(--accent)', s.mql_rate) +
-    `<div style="display:flex;align-items:center;color:var(--muted);font-size:1.4rem;padding:0 2px;">›</div>` +
-    funnelCard('SQL',    s.sql,    s.sql_rate, 'of booked',        '#22c55e',       s.sql_rate);
-
-  // ── Build draggable panels ───────────────────────────────────────────────
-  const GRIP = `<svg width="10" height="16" viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="3" cy="3" r="1.5" fill="currentColor"/><circle cx="7" cy="3" r="1.5" fill="currentColor"/><circle cx="3" cy="8" r="1.5" fill="currentColor"/><circle cx="7" cy="8" r="1.5" fill="currentColor"/><circle cx="3" cy="13" r="1.5" fill="currentColor"/><circle cx="7" cy="13" r="1.5" fill="currentColor"/></svg>`;
-  const order = hsTableOrder();
-  const panelRow = document.getElementById('hsPanelRow');
-  panelRow.innerHTML = order.map(pkey => {
-    const meta = HS_PANEL_META[pkey];
-    const savedW = prefs.hsPanelWidths?.[pkey];
-    const wStyle = savedW ? `min-width:${savedW}px;max-width:${savedW}px;` : 'flex:1;min-width:280px;';
-    return `<div class="hs-panel" id="hs-panel-${pkey}" data-pkey="${pkey}" style="${wStyle}overflow:hidden;padding-right:6px;position:relative;"
-        ondragover="_hsPanelDragOver(event,'${pkey}')"
-        ondragleave="_hsPanelDragLeave(event)"
-        ondrop="_hsPanelDrop(event,'${pkey}')">
-      <div class="hs-panel-header">
-        <span class="hs-panel-drag" draggable="true" title="Drag to reorder"
-              ondragstart="_hsPanelDragStart(event,'${pkey}')"
-              ondragend="_hsPanelDragEnd(event)">${GRIP}</span>
-        <span class="section-title">${meta.title}</span>
-      </div>
-      <div class="hs-table-wrap table-wrap" id="${pkey}Wrap">
-        <table class="data-table" id="${pkey}Table">
-          <colgroup id="${pkey}ColGroup"></colgroup>
-          <thead id="${pkey}Head"></thead>
-          <tbody id="${pkey}Body"></tbody>
-        </table>
-      </div>
-      <div class="table-resize-h" onmousedown="_hsResizeH(event,'${pkey}')"></div>
-      <div class="panel-resize-e" onmousedown="_hsPanelResizeW(event,'${pkey}')"></div>
-    </div>`;
-  }).join('');
-
-  // Apply saved heights
-  order.forEach(pkey => {
-    const wrap = document.getElementById(pkey+'Wrap');
-    if (wrap && prefs.hsTableHeights?.[pkey]) wrap.style.maxHeight = prefs.hsTableHeights[pkey] + 'px';
-  });
-
-  // ── Shared row renderer & table fill ────────────────────────────────────
-  function hsRow(r) {
-    return visHsCols().map(c => {
-      if (c.key === 'label')    return `<td title="${r.label}">${r.label}</td>`;
-      if (c.key === 'mql_rate') return `<td class="num">${r.mql_rate != null ? r.mql_rate+'%' : '—'}</td>`;
-      if (c.key === 'sql_rate') return `<td class="num">${r.sql_rate != null ? r.sql_rate+'%' : '—'}</td>`;
-      return `<td class="num">${r[c.key] ?? '—'}</td>`;
-    }).join('');
-  }
-  const sortMap   = { hsAttr:state.hsAttrSort, hsCamp:state.hsCampSort, hsCont:state.hsContSort };
-  const dataMap   = { hsAttr:d.by_attribution||[], hsCamp:d.by_campaign||[], hsCont:d.by_content||[] };
-  order.forEach(pkey => {
-    const meta = HS_PANEL_META[pkey];
-    renderHsTableHeader(pkey, meta.labelText, sortMap[pkey]);
-    document.getElementById(pkey+'Body').innerHTML =
-      sortHsItems(dataMap[pkey], sortMap[pkey]).map(r => `<tr>${hsRow(r)}</tr>`).join('');
-  });
 }
 
 function nameCell(r){const risks=(r.risks||[]).map(t=>`<span class="risk-tag${t==='High Cost/Appt'?' appt':''}">⚠ ${t}</span>`).join('');return`<span class="name-text" title="${esc(r.name)}">${esc(r.name)}</span>${risks}`;}
@@ -1552,7 +1523,7 @@ function deleteCustomMetric(id){prefs.customMetrics=prefs.customMetrics.filter(m
 function resetPrefs(){if(!confirm('Reset all preferences to defaults?'))return;prefs={...DEFAULT_PREFS};savePrefs(prefs);buildSettingsToggles();if(state.data){renderMetrics();renderTableHeader();if(crViewMode==='table')renderCrTableHeader();renderItems();}}
 function cellColored(v,avg){if(v==null||avg===0)return numR(v);const ratio=v/avg;const cls=ratio<0.75?'cell-good':ratio>1.5?'cell-bad':'cell-warn';return`<span class="num ${cls}">${fmtR(v)}</span>`;}
 function fmtR(v){if(v==null)return'—';return'$ '+Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function fmtN(v){return v==null?'—':Number(v).toLocaleString('pt-BR');}
+function fmtN(v){return v==null?'—':Number(v).toLocaleString('en-US');}
 function numR(v){return`<span class="num">${fmtR(v)}</span>`;}
 function numN(v){return v==null?'<span class="num muted">—</span>':`<span class="num">${fmtN(v)}</span>`;}
 function numPct(v){if(v==null)return'<span class="num muted">—</span>';return`<span class="num ${v<0.5?'warn':''}">${Number(v).toFixed(2)}%</span>`;}
@@ -1656,14 +1627,16 @@ function initEditableTitles() {
 initEditableTitles();
 
 function switchSection(section) {
-  const isExec = section === 'executive';
-  document.getElementById('executiveView').style.display = isExec ? '' : 'none';
-  document.getElementById('metaView').style.display      = isExec ? 'none' : '';
-  document.getElementById('navExec').style.borderBottomColor = isExec ? 'var(--accent)' : 'transparent';
-  document.getElementById('navExec').style.color             = isExec ? 'var(--accent)' : 'var(--muted)';
-  document.getElementById('navMeta').style.borderBottomColor = isExec ? 'transparent' : 'var(--accent)';
-  document.getElementById('navMeta').style.color             = isExec ? 'var(--muted)' : 'var(--accent)';
-  if (isExec) loadExec();
+  const views = {executive:'executiveView', meta:'metaView', metaperf:'metaPerfView'};
+  const navs  = {executive:'navExec', meta:'navMeta', metaperf:'navMetaPerf'};
+  Object.keys(views).forEach(s => {
+    document.getElementById(views[s]).style.display = s === section ? '' : 'none';
+    const nav = document.getElementById(navs[s]);
+    nav.style.borderBottomColor = s === section ? 'var(--accent)' : 'transparent';
+    nav.style.color             = s === section ? 'var(--accent)' : 'var(--muted)';
+  });
+  if (section === 'executive') loadExec();
+  if (section === 'metaperf')  loadMetaPerf();
 }
 
 function setExecPreset(btn) {
@@ -2178,6 +2151,519 @@ const _baseSwitchSection = switchSection;
     if (section === 'meta') _origSwitchMeta();
   };
 })();
+
+// ── Meta Ads Performance state ───────────────────────────────────────────────
+let mpPreset = 'this_month';
+let mpCustomSince = null, mpCustomUntil = null;
+
+function setMpPreset(btn) {
+  document.querySelectorAll('#mpPresetTabs .tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  mpPreset = btn.dataset.mp;
+  mpCustomSince = null; mpCustomUntil = null;
+  loadMetaPerf();
+}
+
+function _mpQS() {
+  if (mpCustomSince && mpCustomUntil) return `since=${mpCustomSince}&until=${mpCustomUntil}`;
+  return `preset=${mpPreset}`;
+}
+
+// Destroy and re-create Chart.js instances to avoid "canvas already in use" errors
+const _mpChartInstances = {};
+function _mpChart(id, config) {
+  if (_mpChartInstances[id]) { _mpChartInstances[id].destroy(); }
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  _mpChartInstances[id] = new Chart(ctx, config);
+}
+
+async function loadMetaPerf() {
+  ['mpFunnelContent','mpCampContent','mpAdsetContent','mpAdContent'].forEach(id => {
+    document.getElementById(id).innerHTML =
+      '<div style="color:var(--muted);font-size:.82rem;">Loading…</div>';
+  });
+  document.getElementById('mpTrendContent').innerHTML =
+    '<canvas id="mpTrendChart" height="80"></canvas>';
+
+  const qs = _mpQS();
+  const [fr, cr, ar, adr, tr] = await Promise.allSettled([
+    fetch(`/api/metaperf/funnel?${qs}`),
+    fetch(`/api/metaperf/campaigns?${qs}`),
+    fetch(`/api/metaperf/adsets?${qs}`),
+    fetch(`/api/metaperf/ads?${qs}`),
+    fetch(`/api/metaperf/trend?${qs}`),
+  ]);
+  try {
+    if (fr.status === 'rejected' || !fr.value.ok) throw new Error('Funnel error');
+    const funnelData = await fr.value.json();
+    renderMpFunnel(funnelData.rows);
+    renderMpCharts(funnelData.rows);
+  } catch(e) {
+    document.getElementById('mpFunnelContent').innerHTML =
+      `<div style="color:#f87171;font-size:.82rem;">${e.message}</div>`;
+  }
+  try {
+    if (cr.status === 'rejected' || !cr.value.ok) throw new Error('Campaign error');
+    renderMpCampaigns((await cr.value.json()).rows);
+  } catch(e) {
+    document.getElementById('mpCampContent').innerHTML =
+      `<div style="color:#f87171;font-size:.82rem;">${e.message}</div>`;
+  }
+  try {
+    if (ar.status === 'rejected' || !ar.value.ok) throw new Error('Ad set error');
+    renderMpAdsets((await ar.value.json()).rows);
+  } catch(e) {
+    document.getElementById('mpAdsetContent').innerHTML =
+      `<div style="color:#f87171;font-size:.82rem;">${e.message}</div>`;
+  }
+  try {
+    if (adr.status === 'rejected' || !adr.value.ok) throw new Error('Ad error');
+    renderMpAds((await adr.value.json()).rows);
+  } catch(e) {
+    document.getElementById('mpAdContent').innerHTML =
+      `<div style="color:#f87171;font-size:.82rem;">${e.message}</div>`;
+  }
+  try {
+    if (tr.status === 'rejected' || !tr.value.ok) throw new Error('Trend error');
+    renderMpTrend(await tr.value.json());
+  } catch(e) {
+    document.getElementById('mpTrendContent').innerHTML =
+      `<div style="color:#f87171;font-size:.82rem;">${e.message}</div>`;
+  }
+}
+
+function renderMpFunnel(rows) {
+  const COLS = [
+    {key:'leads',          label:'Leads'},
+    {key:'mb',             label:'MB'},
+    {key:'mb_rate',        label:'MB Rate',       pct:true},
+    {key:'mql',            label:'MQL'},
+    {key:'mql_rate',       label:'MQL Rate',      pct:true},
+    {key:'mh',             label:'MH'},
+    {key:'show_rate',      label:'Show Rate',     pct:true},
+    {key:'sql',            label:'SQL'},
+    {key:'sql_rate',       label:'SQL Rate',      pct:true},
+    {key:'el_sent',        label:'EL Sent'},
+    {key:'el_sent_rate',   label:'EL Sent Rate',  pct:true},
+    {key:'el_signed',      label:'EL Signed'},
+    {key:'el_signed_rate', label:'EL Signed Rate',pct:true},
+  ];
+
+  const thead = `<tr>
+    <th style="text-align:left;min-width:130px;white-space:nowrap;">Sub-channel</th>
+    ${COLS.map(c=>`<th style="white-space:nowrap;">${c.label}</th>`).join('')}
+  </tr>`;
+
+  const tbody = rows.map((r, i) => {
+    const isTotal = r.sub_channel === 'Meta Total';
+    const style = isTotal ? 'font-weight:700;background:#ffffff08;' : '';
+    const cells = COLS.map(c => {
+      const v = r[c.key];
+      if (v == null) return `<td class="num" style="${style}">—</td>`;
+      if (c.pct) return `<td class="num" style="${style};color:var(--muted)">${v}%</td>`;
+      return `<td class="num" style="${style}">${v.toLocaleString()}</td>`;
+    }).join('');
+    return `<tr><td style="${style}padding-left:12px;">${r.sub_channel}</td>${cells}</tr>`;
+  }).join('');
+
+  document.getElementById('mpFunnelContent').innerHTML = `
+    <div class="table-wrap" style="overflow-x:auto;">
+      <table class="data-table" style="min-width:900px;">
+        <thead>${thead}</thead>
+        <tbody>${tbody}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderMpCampaigns(rows) {
+  const numR  = v => v != null ? `$\u00a0${v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—';
+  const numN  = v => v != null ? v.toLocaleString() : '—';
+  const numPct= v => v != null ? `${v}%` : '—';
+
+  const COLS = [
+    {key:'campaign',       label:'Campaign',         fmt: v => v ?? '—',     align:'left', minW:'180px'},
+    {key:'spend',          label:'Spend',            fmt: numR},
+    {key:'leads_platform', label:'Leads (platform)', fmt: numN},
+    {key:'leads_hs',       label:'Leads (HubSpot)',  fmt: numN},
+    {key:'cpl',            label:'CPL',              fmt: numR},
+    {key:'mb',             label:'MB',               fmt: numN},
+    {key:'cpmb',           label:'CPMB',             fmt: numR},
+    {key:'mql',            label:'MQL',              fmt: numN},
+    {key:'cpmql',          label:'CPMQL',            fmt: numR},
+    {key:'mh',             label:'MH',               fmt: numN},
+    {key:'cpmh',           label:'CPMH',             fmt: numR},
+    {key:'sql',            label:'SQL',              fmt: numN},
+    {key:'cpsql',          label:'CPSQL',            fmt: numR},
+    {key:'el_sent',        label:'EL Sent',          fmt: numN},
+    {key:'el_signed',      label:'EL Signed',        fmt: numN},
+    {key:'cost_el_signed', label:'Cost/EL Signed',   fmt: numR},
+  ];
+
+  const thead = `<tr>${COLS.map(c =>
+    `<th style="white-space:nowrap;text-align:${c.align||'center'};${c.minW?`min-width:${c.minW};`:''}">${c.label}</th>`
+  ).join('')}</tr>`;
+
+  if (!rows.length) {
+    document.getElementById('mpCampContent').innerHTML =
+      '<div style="color:var(--muted);font-size:.82rem;padding:12px 0;">No data for this period.</div>';
+    return;
+  }
+
+  const tbody = rows.map(r => {
+    const cells = COLS.map(c => {
+      const v = r[c.key];
+      const align = c.align || 'center';
+      return `<td style="text-align:${align};">${c.fmt(v)}</td>`;
+    }).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+
+  // Totals row — sum additive fields, recalculate derived ones
+  const SUM_KEYS = ['spend','leads_platform','leads_hs','mb','mql','mh','sql','el_sent','el_signed'];
+  const tot = {};
+  SUM_KEYS.forEach(k => { tot[k] = rows.reduce((s, r) => s + (r[k] || 0), 0); });
+  const sp = tot.spend;
+  tot.cpl           = tot.leads_hs     ? +(sp / tot.leads_hs).toFixed(2)     : null;
+  tot.cpmb          = tot.mb           ? +(sp / tot.mb).toFixed(2)           : null;
+  tot.cpmql         = tot.mql          ? +(sp / tot.mql).toFixed(2)          : null;
+  tot.cpmh          = tot.mh           ? +(sp / tot.mh).toFixed(2)           : null;
+  tot.cpsql         = tot.sql          ? +(sp / tot.sql).toFixed(2)          : null;
+  tot.cost_el_signed= tot.el_signed    ? +(sp / tot.el_signed).toFixed(2)    : null;
+  tot.campaign      = 'TOTAL';
+
+  const totalCells = COLS.map(c => {
+    const v = tot[c.key];
+    const align = c.align || 'center';
+    return `<td style="text-align:${align};font-weight:700;">${c.fmt(v)}</td>`;
+  }).join('');
+  const tfoot = `<tr class="total-row">${totalCells}</tr>`;
+
+  document.getElementById('mpCampContent').innerHTML = `
+    <div class="table-wrap" style="overflow-x:auto;">
+      <table class="data-table" style="min-width:1400px;">
+        <thead>${thead}</thead>
+        <tbody>${tbody}${tfoot}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderMpAdsets(rows) {
+  const numR  = v => v != null ? `$\u00a0${v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—';
+  const numN  = v => v != null ? v.toLocaleString() : '—';
+  const numPct= v => v != null ? `${v}%` : '—';
+
+  const COLS = [
+    {key:'adset_name',     label:'Ad Set Name',      fmt: v => v ?? '—',     align:'left', minW:'200px'},
+    {key:'spend',          label:'Spend',            fmt: numR},
+    {key:'leads_platform', label:'Leads (platform)', fmt: numN},
+    {key:'leads_hs',       label:'Leads (HubSpot)',  fmt: numN},
+    {key:'cpl',            label:'CPL',              fmt: numR},
+    {key:'mb',             label:'MB',               fmt: numN},
+    {key:'cpmb',           label:'CPMB',             fmt: numR},
+    {key:'mql',            label:'MQL',              fmt: numN},
+    {key:'cpmql',          label:'CPMQL',            fmt: numR},
+    {key:'mh',             label:'MH',               fmt: numN},
+    {key:'cpmh',           label:'CPMH',             fmt: numR},
+    {key:'sql',            label:'SQL',              fmt: numN},
+    {key:'cpsql',          label:'CPSQL',            fmt: numR},
+    {key:'el_sent',        label:'EL Sent',          fmt: numN},
+    {key:'el_signed',      label:'EL Signed',        fmt: numN},
+    {key:'cost_el_signed', label:'Cost/EL Signed',   fmt: numR},
+  ];
+
+  const thead = `<tr>${COLS.map(c =>
+    `<th style="white-space:nowrap;text-align:${c.align||'center'};${c.minW?`min-width:${c.minW};`:''}">${c.label}</th>`
+  ).join('')}</tr>`;
+
+  if (!rows.length) {
+    document.getElementById('mpAdsetContent').innerHTML =
+      '<div style="color:var(--muted);font-size:.82rem;padding:12px 0;">No data for this period.</div>';
+    return;
+  }
+
+  const tbody = rows.map(r => {
+    const cells = COLS.map(c => {
+      const align = c.align || 'center';
+      return `<td style="text-align:${align};">${c.fmt(r[c.key])}</td>`;
+    }).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+
+  // Totals row
+  const SUM_KEYS = ['spend','leads_platform','leads_hs','mb','mql','mh','sql','el_sent','el_signed'];
+  const tot = {}; SUM_KEYS.forEach(k => { tot[k] = rows.reduce((s,r) => s+(r[k]||0), 0); });
+  const sp = tot.spend;
+  tot.cpl           = tot.leads_hs     ? +(sp/tot.leads_hs).toFixed(2)     : null;
+  tot.cpmb          = tot.mb           ? +(sp/tot.mb).toFixed(2)           : null;
+  tot.cpmql         = tot.mql          ? +(sp/tot.mql).toFixed(2)          : null;
+  tot.cpmh          = tot.mh           ? +(sp/tot.mh).toFixed(2)           : null;
+  tot.cpsql         = tot.sql          ? +(sp/tot.sql).toFixed(2)          : null;
+  tot.cost_el_signed= tot.el_signed    ? +(sp/tot.el_signed).toFixed(2)    : null;
+  tot.adset_name = 'TOTAL';
+  const tfoot = `<tr class="total-row">${COLS.map(c=>`<td style="text-align:${c.align||'center'};font-weight:700;">${c.fmt(tot[c.key])}</td>`).join('')}</tr>`;
+
+  document.getElementById('mpAdsetContent').innerHTML = `
+    <div class="table-wrap" style="overflow-x:auto;">
+      <table class="data-table" style="min-width:1600px;">
+        <thead>${thead}</thead>
+        <tbody>${tbody}${tfoot}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderMpAds(rows) {
+  const numR  = v => v != null ? `$\u00a0${v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—';
+  const numN  = v => v != null ? v.toLocaleString() : '—';
+  const numPct= v => v != null ? `${v}%` : '—';
+
+  const COLS = [
+    {key:'ad_name',        label:'Ad Name',          fmt: v => v ?? '—',  align:'left', minW:'200px'},
+    {key:'hook_rate',      label:'Hook Rate',         fmt: numPct},
+    {key:'spend',          label:'Spend',             fmt: numR},
+    {key:'leads_platform', label:'Leads (platform)',  fmt: numN},
+    {key:'leads_hs',       label:'Leads (HubSpot)',   fmt: numN},
+    {key:'cpl',            label:'CPL',               fmt: numR},
+    {key:'mb',             label:'MB',                fmt: numN},
+    {key:'cpmb',           label:'CPMB',              fmt: numR},
+    {key:'mql',            label:'MQL',               fmt: numN},
+    {key:'cpmql',          label:'CPMQL',             fmt: numR},
+    {key:'mh',             label:'MH',                fmt: numN},
+    {key:'cpmh',           label:'CPMH',              fmt: numR},
+    {key:'sql',            label:'SQL',               fmt: numN},
+    {key:'cpsql',          label:'CPSQL',             fmt: numR},
+    {key:'el_sent',        label:'EL Sent',           fmt: numN},
+    {key:'el_signed',      label:'EL Signed',         fmt: numN},
+    {key:'cost_el_signed', label:'Cost/EL Signed',    fmt: numR},
+  ];
+
+  const thead = `<tr>${COLS.map(c =>
+    `<th style="white-space:nowrap;text-align:${c.align||'center'};${c.minW?`min-width:${c.minW};`:''}">${c.label}</th>`
+  ).join('')}</tr>`;
+
+  if (!rows.length) {
+    document.getElementById('mpAdContent').innerHTML =
+      '<div style="color:var(--muted);font-size:.82rem;padding:12px 0;">No data for this period.</div>';
+    return;
+  }
+
+  const tbody = rows.map(r => {
+    const cells = COLS.map(c =>
+      `<td style="text-align:${c.align||'center'};">${c.fmt(r[c.key])}</td>`
+    ).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+
+  const SUM_KEYS = ['spend','leads_platform','leads_hs','mb','mql','mh','sql','el_sent','el_signed'];
+  const tot = {}; SUM_KEYS.forEach(k => { tot[k] = rows.reduce((s,r) => s+(r[k]||0), 0); });
+  const sp = tot.spend;
+  tot.hook_rate     = null;  // not meaningful as a sum
+  tot.cpl           = tot.leads_hs     ? +(sp/tot.leads_hs).toFixed(2)     : null;
+  tot.cpmb          = tot.mb           ? +(sp/tot.mb).toFixed(2)           : null;
+  tot.cpmql         = tot.mql          ? +(sp/tot.mql).toFixed(2)          : null;
+  tot.cpmh          = tot.mh           ? +(sp/tot.mh).toFixed(2)           : null;
+  tot.cpsql         = tot.sql          ? +(sp/tot.sql).toFixed(2)          : null;
+  tot.cost_el_signed= tot.el_signed    ? +(sp/tot.el_signed).toFixed(2)    : null;
+  tot.ad_name = 'TOTAL';
+  const tfoot = `<tr class="total-row">${COLS.map(c=>`<td style="text-align:${c.align||'center'};font-weight:700;">${c.fmt(tot[c.key])}</td>`).join('')}</tr>`;
+
+  document.getElementById('mpAdContent').innerHTML = `
+    <div class="table-wrap" style="overflow-x:auto;">
+      <table class="data-table" style="min-width:1600px;">
+        <thead>${thead}</thead>
+        <tbody>${tbody}${tfoot}</tbody>
+      </table>
+    </div>`;
+}
+
+// ── Panel 2.5 — On-Site vs Callingly grouped bar charts ──────────────────────
+function renderMpCharts(rows) {
+  // rows[0] = On-Site, rows[1] = Callingly
+  if (!rows || rows.length < 2) return;
+  const onsite    = rows[0];
+  const callingly = rows[1];
+
+  const LABELS  = ['On-Site', 'Callingly'];
+  const C_CREAM = 'rgba(237,232,208,0.85)';
+  const C_TEAL  = 'rgba(94,175,160,0.85)';
+
+  function barCfg(values, rateLabels) {
+    const datasets = [{
+      label: 'Volume',
+      data: values,
+      backgroundColor: [C_CREAM, C_TEAL],
+      borderRadius: 4,
+    }];
+    const plugins = {
+      legend: { display: false },
+      tooltip: { callbacks: {
+        label: ctx => {
+          const v = ctx.parsed.y;
+          const r = rateLabels ? rateLabels[ctx.dataIndex] : null;
+          return r != null ? `${v} (${r}%)` : `${v}`;
+        }
+      }},
+      datalabels: { display: false },
+    };
+    if (rateLabels) {
+      // Show rate as annotation below bar label
+      plugins.afterDraw = undefined;
+    }
+    return {
+      type: 'bar',
+      data: { labels: LABELS, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins,
+        scales: {
+          y: { beginAtZero: true, ticks: { font: { size: 10 } } },
+          x: { ticks: { font: { size: 10 } } },
+        },
+      }
+    };
+  }
+
+  function cpsqlCfg(values) {
+    return {
+      type: 'bar',
+      data: {
+        labels: LABELS,
+        datasets: [{
+          label: 'CPSQL',
+          data: values,
+          backgroundColor: [C_CREAM, C_TEAL],
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => `$${(ctx.parsed.y||0).toFixed(2)}` } },
+        },
+        scales: {
+          y: { beginAtZero: true, ticks: { font: { size: 10 }, callback: v => `$${v}` } },
+          x: { ticks: { font: { size: 10 } } },
+        },
+      }
+    };
+  }
+
+  // Chart 0: Lead Volume
+  _mpChart('mpChart0', barCfg(
+    [onsite.leads, callingly.leads], null
+  ));
+  // Chart 1: MB Volume + mb_rate
+  _mpChart('mpChart1', barCfg(
+    [onsite.mb, callingly.mb],
+    [onsite.mb_rate, callingly.mb_rate]
+  ));
+  // Chart 2: MQL Volume + mql_rate
+  _mpChart('mpChart2', barCfg(
+    [onsite.mql, callingly.mql],
+    [onsite.mql_rate, callingly.mql_rate]
+  ));
+  // Chart 3: MH Volume + show_rate
+  _mpChart('mpChart3', barCfg(
+    [onsite.mh, callingly.mh],
+    [onsite.show_rate, callingly.show_rate]
+  ));
+  // Chart 4: SQL Volume + sql_rate
+  _mpChart('mpChart4', barCfg(
+    [onsite.sql, callingly.sql],
+    [onsite.sql_rate, callingly.sql_rate]
+  ));
+  // Chart 5: CPSQL
+  _mpChart('mpChart5', cpsqlCfg(
+    [onsite.cpsql, callingly.cpsql]
+  ));
+}
+
+// ── Panel 2.6 — Daily Trend (Meta) line chart ────────────────────────────────
+function renderMpTrend(data) {
+  if (!data || !data.series || !data.series.length) {
+    document.getElementById('mpTrendContent').innerHTML =
+      '<div style="color:var(--muted);font-size:.82rem;padding:12px 0;">No trend data for this period.</div>';
+    return;
+  }
+  const { series, granularity } = data;
+  const labels = series.map(s => s.date);
+
+  const palette = {
+    nl:         { color: 'rgba(94,175,160,1)',   label: 'Leads' },
+    mb:         { color: 'rgba(237,232,208,1)',   label: 'MB' },
+    mql:        { color: 'rgba(255,200,80,1)',    label: 'MQL' },
+    mh:         { color: 'rgba(130,180,255,1)',   label: 'MH' },
+    sql:        { color: 'rgba(200,130,255,1)',   label: 'SQL' },
+    el_signed:  { color: 'rgba(255,130,130,1)',   label: 'EL Signed' },
+  };
+
+  const lineDatasets = Object.entries(palette).map(([key, cfg]) => ({
+    label: cfg.label,
+    data: series.map(s => s[key]),
+    borderColor: cfg.color,
+    backgroundColor: 'transparent',
+    tension: 0.3,
+    pointRadius: granularity === 'week' ? 4 : 2,
+    yAxisID: 'yLeft',
+  }));
+
+  const spendDataset = {
+    label: 'Spend ($)',
+    data: series.map(s => s.spend),
+    borderColor: 'rgba(255,180,60,0.9)',
+    backgroundColor: 'rgba(255,180,60,0.08)',
+    borderDash: [5, 3],
+    tension: 0.3,
+    pointRadius: granularity === 'week' ? 4 : 2,
+    fill: true,
+    yAxisID: 'yRight',
+  };
+
+  _mpChart('mpTrendChart', {
+    type: 'line',
+    data: { labels, datasets: [...lineDatasets, spendDataset] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { font: { size: 11 }, boxWidth: 14, padding: 12 },
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.yAxisID === 'yRight'
+              ? ` ${ctx.dataset.label}: $${(ctx.parsed.y||0).toFixed(2)}`
+              : ` ${ctx.dataset.label}: ${ctx.parsed.y}`,
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+        yLeft: {
+          type: 'linear',
+          position: 'left',
+          beginAtZero: true,
+          ticks: { font: { size: 10 } },
+          title: { display: true, text: 'Count', font: { size: 10 } },
+        },
+        yRight: {
+          type: 'linear',
+          position: 'right',
+          beginAtZero: true,
+          grid: { drawOnChartArea: false },
+          ticks: { font: { size: 10 }, callback: v => `$${v}` },
+          title: { display: true, text: 'Spend ($)', font: { size: 10 } },
+        },
+      },
+    }
+  });
+}
 </script>
 </body>
 </html>

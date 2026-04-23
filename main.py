@@ -2,6 +2,7 @@ import os
 import io
 import csv
 import json
+import re
 import time
 import asyncio
 import httpx
@@ -117,8 +118,11 @@ async def _meta_get_all(account_id: str, token: str, params: dict) -> list:
 _ATTR_WINDOWS = json.dumps(["7d_click", "1d_view"])
 
 async def _get_insights(account_id: str, token: str, since: str, until: str, level: str) -> list:
-    name_f = {"campaign": "campaign_name", "adset": "adset_name"}.get(level, "")
-    extra  = ",campaign_name" if level == "adset" else ""
+    name_map = {"campaign": "campaign_name", "adset": "adset_name", "ad": "ad_name"}
+    name_f   = name_map.get(level, "")
+    extra    = (",campaign_name" if level == "adset"
+                else ",campaign_name,adset_name" if level == "ad"
+                else "")
     fields = f"{name_f}{extra},{_INS_FIELDS}" if name_f else _INS_FIELDS
     return await _meta_get_all(account_id, token, {
         "fields": fields,
@@ -274,12 +278,14 @@ async def _load_custom_conversions():
 
 async def _fetch_campaign_data(account_id: str, token: str, level: str) -> dict:
     endpoint = "campaigns" if level == "campaign" else "adsets"
+    fields = ("id,name,daily_budget,lifetime_budget,effective_status,optimization_goal,campaign_id"
+              if level == "adset" else "id,name,daily_budget,lifetime_budget,effective_status")
     async with httpx.AsyncClient() as c:
         try:
             r = await c.get(f"{META_GRAPH_BASE}/{account_id}/{endpoint}", params={
-                "fields": "id,name,daily_budget,lifetime_budget,effective_status",
+                "fields": fields,
                 "access_token": token,
-                "limit": 200,
+                "limit": 500,
             }, timeout=15)
             if r.status_code == 200:
                 return {item["name"]: item for item in r.json().get("data", [])}
@@ -883,7 +889,8 @@ def _fetch_hs_contacts() -> list:
             "attribution":  attribution,
             "utm_source":   _clean_utm(str(row.get("utm_source",  "") or "")) or "",
             "utm_campaign": utm_campaign,
-            "utm_content":  _clean_utm(str(row.get("utm_content", "") or "")) or "(no utm_content)",
+            "utm_medium":   _clean_utm(str(row.get("utm_medium",  "") or "")) or "",
+            "utm_content":  _clean_utm(str(row.get("utm_content", "") or "")) or "",
         })
     contacts.sort(key=lambda x: x["date"])
     return contacts
@@ -906,7 +913,8 @@ def _fetch_hs_new_leads() -> list:
             "attribution":  attribution,
             "utm_source":   _clean_utm(str(row.get("utm_source",  "") or "")) or "",
             "utm_campaign": utm_campaign,
-            "utm_content":  _clean_utm(str(row.get("utm_content", "") or "")) or "(no utm_content)",
+            "utm_medium":   _clean_utm(str(row.get("utm_medium",  "") or "")) or "",
+            "utm_content":  _clean_utm(str(row.get("utm_content", "") or "")) or "",
         })
     contacts.sort(key=lambda x: x["date"])
     return contacts
@@ -929,8 +937,9 @@ def _fetch_hs_mh() -> list:
         contacts.append({
             "date":        date,
             "email":       str(row.get("Email", "") or "").strip().lower(),
-            "attribution": attribution,
+            "attribution":  attribution,
             "utm_campaign": utm_campaign,
+            "utm_medium":   _clean_utm(str(row.get("utm_medium",  "") or "")) or "",
         })
     contacts.sort(key=lambda x: x["date"])
     return contacts
@@ -1475,4 +1484,558 @@ async def api_hubspot_funnel(preset: str = "last_30d", since: str = None, until:
         "by_attribution": _with_rates(by_attr),
         "monthly":        monthly_list,
         "cache_generated_at": cache.get("generated_at", ""),
+    })
+
+
+# ── Meta Ads Performance ──────────────────────────────────────────────────────
+
+_META_ONSITE    = "Meta Ads - On-site Conversion"
+_META_CALLINGLY = "Meta Ads - Callingly/Instant Forms"
+_META_ATTRS     = {_META_ONSITE, _META_CALLINGLY}
+
+def _camp_num(s: str):
+    """Extract numeric campaign ID from strings like:
+      '79_Leads_...'                         → '79'
+      '[MARKETING] [SCHEDULES] [79]'         → '79'
+      '[MARKETING] [INSTANT FORMS] [76] ...' → '76'
+    Returns None if no number found.
+    """
+    m = re.match(r'^(\d+)[_\-]', s.strip())
+    if m:
+        return m.group(1)
+    nums = re.findall(r'\[(\d+)\]', s)
+    return nums[-1] if nums else None
+
+def _build_canonical_by_num(meta_raw: dict) -> dict:
+    """Build {campaign_number → canonical_display_name} from Meta API campaign names."""
+    canonical: dict = {}
+    for key, v in meta_raw.items():
+        num = _camp_num(key)
+        if num and re.match(r'^\d+_leads_', key):
+            canonical[num] = v["name"]
+    return canonical
+
+def _resolve_canonical_key(s: str, canonical_by_num: dict) -> str:
+    """Normalize any campaign string to its canonical number-based key, or itself."""
+    num = _camp_num(s.lower())
+    if num and num in canonical_by_num:
+        return canonical_by_num[num].lower()
+    return s.lower()
+
+def _pct(num: int, den: int):
+    return round(num / den * 100, 1) if den else None
+
+def _meta_funnel_row(label: str, nl, mb, mh) -> dict:
+    mql = [c for c in mb if c["mql"]]
+    sql = [c for c in mb if c["sql"]]
+    els = [c for c in mb if c["el_sent"]]
+    eli = [c for c in mb if c["el_signed"]]
+    return {
+        "sub_channel":    label,
+        "leads":          len(nl),
+        "mb":             len(mb),
+        "mb_rate":        _pct(len(mb),  len(nl)),
+        "mql":            len(mql),
+        "mql_rate":       _pct(len(mql), len(mb)),
+        "mh":             len(mh),
+        "show_rate":      _pct(len(mh),  len(mb)),
+        "sql":            len(sql),
+        "sql_rate":       _pct(len(sql), len(mb)),
+        "el_sent":        len(els),
+        "el_sent_rate":   _pct(len(els), len(sql)),
+        "el_signed":      len(eli),
+        "el_signed_rate": _pct(len(eli), len(els)),
+    }
+
+
+@app.get("/api/metaperf/funnel")
+async def api_metaperf_funnel(preset: str = "this_month", since: str = None, until: str = None):
+    """Panel 2.1 — Meta Funnel Overview: On-Site vs Callingly."""
+    await _load_custom_conversions()
+    d_since, d_until, _, _ = _compute_period(
+        preset if not (since and until) else None, since, until
+    )
+
+    nl_all = _load_hs_new_leads(d_since, d_until, mkt_only=False)
+    mb_all = _load_hs_contacts(d_since, d_until, mkt_only=False)
+    mh_all = _load_hs_mh(d_since, d_until, mkt_only=False)
+
+    rows = []
+    for attr_val, label in [(_META_ONSITE, "On-Site/Conversion"), (_META_CALLINGLY, "Callingly")]:
+        rows.append(_meta_funnel_row(
+            label,
+            [c for c in nl_all if c["attribution"] == attr_val],
+            [c for c in mb_all if c["attribution"] == attr_val],
+            [c for c in mh_all if c["attribution"] == attr_val],
+        ))
+
+    # Meta Total = both sub-channels combined
+    rows.append(_meta_funnel_row(
+        "Meta Total",
+        [c for c in nl_all if c["attribution"] in _META_ATTRS],
+        [c for c in mb_all if c["attribution"] in _META_ATTRS],
+        [c for c in mh_all if c["attribution"] in _META_ATTRS],
+    ))
+
+    # Add spend per sub-channel (campaigns with "instant" in name → Callingly)
+    token = get_token(); accounts_list = get_accounts()
+    sp_onsite = sp_callingly = 0.0
+    if token and accounts_list:
+        try:
+            for acc in accounts_list:
+                for row in await _get_insights(acc, token, d_since, d_until, "campaign"):
+                    camp = row.get("campaign_name", "").lower()
+                    sp = _row_metrics(row)["spend"]
+                    if "instant" in camp:
+                        sp_callingly += sp
+                    else:
+                        sp_onsite += sp
+        except Exception as e:
+            print(f"[metaperf/funnel] spend fetch failed: {e}")
+
+    rows[0]["spend"] = round(sp_onsite, 2)
+    rows[1]["spend"] = round(sp_callingly, 2)
+    rows[2]["spend"] = round(sp_onsite + sp_callingly, 2)
+    for r in rows:
+        sp = r["spend"] or 0
+        sql = r.get("sql") or 0
+        r["cpsql"] = round(sp / sql, 2) if sp and sql else None
+
+    return JSONResponse({"rows": rows, "since": d_since, "until": d_until})
+
+
+@app.get("/api/metaperf/campaigns")
+async def api_metaperf_campaigns(preset: str = "this_month", since: str = None, until: str = None):
+    """Panel 2.2 — Campaign-Level Breakdown (number-unified)."""
+    await _load_custom_conversions()
+    d_since, d_until, _, _ = _compute_period(
+        preset if not (since and until) else None, since, until
+    )
+
+    # ── Meta API campaign-level data ──────────────────────────────────────────
+    token = get_token()
+    accounts_list = get_accounts()
+    meta_raw: dict = {}   # campaign_name.lower() → {name, spend, impressions, link_clicks, leads}
+    if token and accounts_list:
+        for acc in accounts_list:
+            for row in await _get_insights(acc, token, d_since, d_until, "campaign"):
+                camp_name = row.get("campaign_name", "").strip()
+                if not camp_name:
+                    continue
+                m = _row_metrics(row)
+                key = camp_name.lower()
+                if key in meta_raw:
+                    for k in ("spend", "impressions", "link_clicks", "leads"):
+                        meta_raw[key][k] += m[k]
+                else:
+                    meta_raw[key] = {"name": camp_name, "spend": m["spend"],
+                                     "impressions": m["impressions"],
+                                     "link_clicks": m["link_clicks"],
+                                     "leads": m["leads"]}
+
+    # Build canonical mapping: campaign number → canonical display name
+    canonical_by_num = _build_canonical_by_num(meta_raw)
+    def _canonical_key(s: str) -> str:
+        return _resolve_canonical_key(s, canonical_by_num)
+
+    # Merge Meta API data by canonical key
+    meta_by_canon: dict = {}   # canonical_name.lower() → aggregated metrics
+    for key, v in meta_raw.items():
+        ck = _canonical_key(key)
+        canon_name = canonical_by_num.get(_camp_num(key) or "", v["name"]) if ck in {c.lower() for c in canonical_by_num.values()} else v["name"]
+        if ck not in meta_by_canon:
+            meta_by_canon[ck] = {"name": canon_name, "spend": 0.0,
+                                  "impressions": 0, "link_clicks": 0, "leads": 0}
+        for k in ("spend", "impressions", "link_clicks", "leads"):
+            meta_by_canon[ck][k] += v[k]
+    # Recalculate derived fields
+    for v in meta_by_canon.values():
+        sp = v["spend"]; im = v["impressions"]; lc = v["link_clicks"]
+        v["ctr"]   = round(lc / im * 100 if im else 0, 2)
+        v["cpc"]   = round(sp / lc if lc else 0, 2)
+        v["spend"] = round(sp, 2)
+
+    # ── HubSpot data grouped by utm_campaign (Meta only) ─────────────────────
+    nl_all = _load_hs_new_leads(d_since, d_until, mkt_only=False)
+    mb_all = _load_hs_contacts(d_since, d_until, mkt_only=False)
+    mh_all = _load_hs_mh(d_since, d_until, mkt_only=False)
+
+    def _empty_hs() -> dict:
+        return {"nl": 0, "mb": 0, "mql": 0, "mh": 0, "sql": 0, "el_sent": 0, "el_signed": 0}
+
+    hs_by_canon: dict = {}   # canonical_key → bucket
+    for c in nl_all:
+        if c["attribution"] not in _META_ATTRS:
+            continue
+        ck = _canonical_key(c["utm_campaign"])
+        if ck not in hs_by_canon:
+            hs_by_canon[ck] = _empty_hs()
+        hs_by_canon[ck]["nl"] += 1
+    for c in mb_all:
+        if c["attribution"] not in _META_ATTRS:
+            continue
+        ck = _canonical_key(c["utm_campaign"])
+        if ck not in hs_by_canon:
+            hs_by_canon[ck] = _empty_hs()
+        hs_by_canon[ck]["mb"]       += 1
+        if c["mql"]:       hs_by_canon[ck]["mql"]      += 1
+        if c["sql"]:       hs_by_canon[ck]["sql"]       += 1
+        if c["el_sent"]:   hs_by_canon[ck]["el_sent"]   += 1
+        if c["el_signed"]: hs_by_canon[ck]["el_signed"] += 1
+    for c in mh_all:
+        if c["attribution"] not in _META_ATTRS:
+            continue
+        ck = _canonical_key(c["utm_campaign"])
+        if ck not in hs_by_canon:
+            hs_by_canon[ck] = _empty_hs()
+        hs_by_canon[ck]["mh"] += 1
+
+    # ── Build rows ────────────────────────────────────────────────────────────
+    def _row(display_name: str, hs: dict, meta: dict) -> dict:
+        sp  = meta.get("spend") or 0
+        nl  = hs.get("nl", 0);  mb  = hs.get("mb", 0);  mql = hs.get("mql", 0)
+        mh  = hs.get("mh", 0);  sql = hs.get("sql", 0)
+        els = hs.get("el_sent", 0); eli = hs.get("el_signed", 0)
+        def cp(den): return round(sp / den, 2) if sp and den else None
+        return {
+            "campaign":       display_name,
+            "spend":          round(sp, 2) if sp else None,
+            "impressions":    meta.get("impressions") or None,
+            "link_clicks":    meta.get("link_clicks") or None,
+            "ctr":            meta.get("ctr") or None,
+            "cpc":            meta.get("cpc") or None,
+            "leads_platform": meta.get("leads") or None,
+            "leads_hs":       nl  or None,
+            "cpl":            cp(nl),
+            "mb":             mb  or None,
+            "cpmb":           cp(mb),
+            "mql":            mql or None,
+            "cpmql":          cp(mql),
+            "mh":             mh  or None,
+            "cpmh":           cp(mh),
+            "sql":            sql or None,
+            "cpsql":          cp(sql),
+            "el_sent":        els or None,
+            "el_signed":      eli or None,
+            "cost_el_signed": cp(eli),
+        }
+
+    all_keys = set(meta_by_canon.keys()) | set(hs_by_canon.keys())
+    rows = []
+    for ck in all_keys:
+        meta_m = meta_by_canon.get(ck, {})
+        hs_m   = hs_by_canon.get(ck, {})
+        display = meta_m.get("name") or ck
+        rows.append(_row(display, hs_m, meta_m))
+
+    rows.sort(key=lambda r: r.get("spend") or 0, reverse=True)
+    return JSONResponse({"rows": rows, "since": d_since, "until": d_until})
+
+
+@app.get("/api/metaperf/adsets")
+async def api_metaperf_adsets(preset: str = "this_month", since: str = None, until: str = None):
+    """Panel 2.3 — Ad Set-Level Breakdown."""
+    await _load_custom_conversions()
+    d_since, d_until, _, _ = _compute_period(
+        preset if not (since and until) else None, since, until
+    )
+
+    token = get_token()
+    accounts_list = get_accounts()
+
+    # ── Meta API adset insights + metadata ────────────────────────────────────
+    # Build canonical_by_num from campaign-level insights for number-based merging
+    meta_adsets: dict = {}
+    canonical_by_num: dict = {}
+    if token and accounts_list:
+        _camp_raw: dict = {}
+        for acc in accounts_list:
+            for row in await _get_insights(acc, token, d_since, d_until, "campaign"):
+                cn = row.get("campaign_name", "").strip()
+                if cn:
+                    _camp_raw[cn.lower()] = {"name": cn}
+        canonical_by_num = _build_canonical_by_num(_camp_raw)
+        def _canonical_key(s: str) -> str:
+            return _resolve_canonical_key(s, canonical_by_num)
+
+        meta_meta: dict = {}  # adset_name → metadata (opt_goal, daily_budget)
+        for acc in accounts_list:
+            cdata = await _fetch_campaign_data(acc, token, "adset")
+            meta_meta.update(cdata)
+            for row in await _get_insights(acc, token, d_since, d_until, "adset"):
+                adset_name = row.get("adset_name", "").strip()
+                camp_name  = row.get("campaign_name", "").strip()
+                if not adset_name:
+                    continue
+                m   = _row_metrics(row)
+                ck  = _canonical_key(camp_name.lower())
+                key = (ck, adset_name.lower())
+                if key in meta_adsets:
+                    for k in ("spend", "impressions", "link_clicks", "leads"):
+                        meta_adsets[key][k] += m[k]
+                else:
+                    meta = meta_meta.get(adset_name, {})
+                    db_raw = meta.get("daily_budget")
+                    db = round(float(db_raw) / 100, 2) if db_raw else None
+                    meta_adsets[key] = {
+                        "adset_name":      adset_name,
+                        "campaign_name":   camp_name,
+                        "opt_goal":        meta.get("optimization_goal", ""),
+                        "daily_budget":    db,
+                        "spend":           m["spend"],
+                        "impressions":     m["impressions"],
+                        "link_clicks":     m["link_clicks"],
+                        "leads":           m["leads"],
+                    }
+        for v in meta_adsets.values():
+            sp = v["spend"]; im = v["impressions"]; lc = v["link_clicks"]
+            v["ctr"]   = round(lc / im * 100 if im else 0, 2)
+            v["cpc"]   = round(sp / lc if lc else 0, 2)
+            v["spend"] = round(sp, 2)
+
+    # Ensure _canonical_key exists even when token is absent
+    if not canonical_by_num:
+        def _canonical_key(s: str) -> str:  # noqa: F811
+            return s.lower()
+
+    # ── HubSpot data grouped by (canonical_campaign_key, utm_content.lower()) ─
+    nl_all = _load_hs_new_leads(d_since, d_until, mkt_only=False)
+    mb_all = _load_hs_contacts(d_since, d_until, mkt_only=False)
+    mh_all = _load_hs_mh(d_since, d_until, mkt_only=False)
+
+    hs_adsets: dict = {}
+    def _hs_key(c):
+        return (_canonical_key(c["utm_campaign"]), c.get("utm_medium", "").lower())
+
+    for c in nl_all:
+        if c["attribution"] not in _META_ATTRS: continue
+        k = _hs_key(c)
+        if k not in hs_adsets: hs_adsets[k] = {"nl":0,"mb":0,"mql":0,"mh":0,"sql":0,"el_sent":0,"el_signed":0}
+        hs_adsets[k]["nl"] += 1
+    for c in mb_all:
+        if c["attribution"] not in _META_ATTRS: continue
+        k = _hs_key(c)
+        if k not in hs_adsets: hs_adsets[k] = {"nl":0,"mb":0,"mql":0,"mh":0,"sql":0,"el_sent":0,"el_signed":0}
+        hs_adsets[k]["mb"]       += 1
+        if c["mql"]:       hs_adsets[k]["mql"]      += 1
+        if c["sql"]:       hs_adsets[k]["sql"]       += 1
+        if c["el_sent"]:   hs_adsets[k]["el_sent"]   += 1
+        if c["el_signed"]: hs_adsets[k]["el_signed"] += 1
+    for c in mh_all:
+        if c["attribution"] not in _META_ATTRS: continue
+        k = _hs_key(c)
+        if k not in hs_adsets: hs_adsets[k] = {"nl":0,"mb":0,"mql":0,"mh":0,"sql":0,"el_sent":0,"el_signed":0}
+        hs_adsets[k]["mh"] += 1
+
+    # ── Build rows ────────────────────────────────────────────────────────────
+    all_keys = set(meta_adsets.keys()) | set(hs_adsets.keys())
+    rows = []
+    for key in all_keys:
+        meta_m = meta_adsets.get(key, {})
+        hs_m   = hs_adsets.get(key, {})
+        sp  = meta_m.get("spend") or 0
+        nl  = hs_m.get("nl",0); mb  = hs_m.get("mb",0);  mql = hs_m.get("mql",0)
+        mh  = hs_m.get("mh",0); sql = hs_m.get("sql",0)
+        els = hs_m.get("el_sent",0); eli = hs_m.get("el_signed",0)
+        def cp(den): return round(sp / den, 2) if sp and den else None
+        rows.append({
+            "campaign":       meta_m.get("campaign_name") or key[0],
+            "adset_name":     meta_m.get("adset_name") or key[1],
+            "opt_goal":       meta_m.get("opt_goal") or None,
+            "daily_budget":   meta_m.get("daily_budget"),
+            "spend":          round(sp, 2) if sp else None,
+            "impressions":    meta_m.get("impressions") or None,
+            "link_clicks":    meta_m.get("link_clicks") or None,
+            "ctr":            meta_m.get("ctr") or None,
+            "cpc":            meta_m.get("cpc") or None,
+            "leads_platform": meta_m.get("leads") or None,
+            "leads_hs":       nl  or None,
+            "cpl":            cp(nl),
+            "mb":             mb  or None,
+            "cpmb":           cp(mb),
+            "mql":            mql or None,
+            "cpmql":          cp(mql),
+            "mh":             mh  or None,
+            "cpmh":           cp(mh),
+            "sql":            sql or None,
+            "cpsql":          cp(sql),
+            "el_sent":        els or None,
+            "el_signed":      eli or None,
+            "cost_el_signed": cp(eli),
+        })
+
+    rows.sort(key=lambda r: r.get("spend") or 0, reverse=True)
+    return JSONResponse({"rows": rows, "since": d_since, "until": d_until})
+
+
+@app.get("/api/metaperf/ads")
+async def api_metaperf_ads(preset: str = "this_month", since: str = None, until: str = None):
+    """Panel 2.4 — Creative (Ad)-Level Breakdown. Join key: utm_content = ad_name."""
+    await _load_custom_conversions()
+    d_since, d_until, _, _ = _compute_period(
+        preset if not (since and until) else None, since, until
+    )
+
+    token = get_token()
+    accounts_list = get_accounts()
+
+    # ── Meta API ad-level insights ────────────────────────────────────────────
+    meta_ads: dict = {}   # ad_name.lower() → metrics
+    if token and accounts_list:
+        for acc in accounts_list:
+            for row in await _get_insights(acc, token, d_since, d_until, "ad"):
+                ad_name = row.get("ad_name", "").strip()
+                if not ad_name:
+                    continue
+                m   = _row_metrics(row)
+                key = ad_name.lower()
+                if key in meta_ads:
+                    for k in ("spend", "impressions", "link_clicks", "leads", "video_views"):
+                        meta_ads[key][k] += m[k]
+                else:
+                    meta_ads[key] = {
+                        "ad_name":     ad_name,
+                        "spend":       m["spend"],
+                        "impressions": m["impressions"],
+                        "link_clicks": m["link_clicks"],
+                        "leads":       m["leads"],
+                        "video_views": m["video_views"],
+                    }
+        for v in meta_ads.values():
+            sp = v["spend"]; im = v["impressions"]; lc = v["link_clicks"]; vv = v["video_views"]
+            v["ctr"]       = round(lc / im * 100 if im else 0, 2)
+            v["cpc"]       = round(sp / lc if lc else 0, 2)
+            v["hook_rate"] = round(vv / im * 100 if im and vv else 0, 2) or None
+            v["spend"]     = round(sp, 2)
+
+    # ── HubSpot data grouped by utm_content (Meta only) ──────────────────────
+    nl_all = _load_hs_new_leads(d_since, d_until, mkt_only=False)
+    mb_all = _load_hs_contacts(d_since, d_until, mkt_only=False)
+    mh_all = _load_hs_mh(d_since, d_until, mkt_only=False)
+
+    hs_by_content: dict = {}
+    def _ck(c): return c.get("utm_content", "").lower()
+
+    for c in nl_all:
+        if c["attribution"] not in _META_ATTRS: continue
+        k = _ck(c)
+        if k not in hs_by_content: hs_by_content[k] = {"nl":0,"mb":0,"mql":0,"mh":0,"sql":0,"el_sent":0,"el_signed":0}
+        hs_by_content[k]["nl"] += 1
+    for c in mb_all:
+        if c["attribution"] not in _META_ATTRS: continue
+        k = _ck(c)
+        if k not in hs_by_content: hs_by_content[k] = {"nl":0,"mb":0,"mql":0,"mh":0,"sql":0,"el_sent":0,"el_signed":0}
+        hs_by_content[k]["mb"]       += 1
+        if c["mql"]:       hs_by_content[k]["mql"]      += 1
+        if c["sql"]:       hs_by_content[k]["sql"]       += 1
+        if c["el_sent"]:   hs_by_content[k]["el_sent"]   += 1
+        if c["el_signed"]: hs_by_content[k]["el_signed"] += 1
+    for c in mh_all:
+        if c["attribution"] not in _META_ATTRS: continue
+        k = _ck(c)
+        if k not in hs_by_content: hs_by_content[k] = {"nl":0,"mb":0,"mql":0,"mh":0,"sql":0,"el_sent":0,"el_signed":0}
+        hs_by_content[k]["mh"] += 1
+
+    # ── Build rows ────────────────────────────────────────────────────────────
+    all_keys = set(meta_ads.keys()) | set(hs_by_content.keys())
+    rows = []
+    for key in all_keys:
+        meta_m = meta_ads.get(key, {})
+        hs_m   = hs_by_content.get(key, {})
+        sp  = meta_m.get("spend") or 0
+        nl  = hs_m.get("nl",0);  mb  = hs_m.get("mb",0);  mql = hs_m.get("mql",0)
+        mh  = hs_m.get("mh",0);  sql = hs_m.get("sql",0)
+        els = hs_m.get("el_sent",0); eli = hs_m.get("el_signed",0)
+        def cp(den): return round(sp / den, 2) if sp and den else None
+        rows.append({
+            "ad_name":        meta_m.get("ad_name") or key,
+            "hook_rate":      meta_m.get("hook_rate"),
+            "spend":          round(sp, 2) if sp else None,
+            "impressions":    meta_m.get("impressions") or None,
+            "link_clicks":    meta_m.get("link_clicks") or None,
+            "ctr":            meta_m.get("ctr") or None,
+            "cpc":            meta_m.get("cpc") or None,
+            "leads_platform": meta_m.get("leads") or None,
+            "leads_hs":       nl  or None,
+            "cpl":            cp(nl),
+            "mb":             mb  or None,
+            "cpmb":           cp(mb),
+            "mql":            mql or None,
+            "cpmql":          cp(mql),
+            "mh":             mh  or None,
+            "cpmh":           cp(mh),
+            "sql":            sql or None,
+            "cpsql":          cp(sql),
+            "el_sent":        els or None,
+            "el_signed":      eli or None,
+            "cost_el_signed": cp(eli),
+        })
+
+    rows.sort(key=lambda r: r.get("spend") or 0, reverse=True)
+    return JSONResponse({"rows": rows, "since": d_since, "until": d_until})
+
+
+@app.get("/api/metaperf/trend")
+async def api_metaperf_trend(preset: str = "this_month", since: str = None, until: str = None):
+    """Panel 2.6 — Daily/Weekly Trend filtered to Meta attribution."""
+    await _load_custom_conversions()
+    d_since, d_until, _, _ = _compute_period(
+        preset if not (since and until) else None, since, until
+    )
+    ds = _date.fromisoformat(d_since)
+    du = _date.fromisoformat(d_until)
+    total_days = (du - ds).days + 1
+    weekly = total_days > 35
+
+    def _bucket(date_str: str) -> str:
+        d = _date.fromisoformat(date_str[:10])
+        if weekly:
+            return (d - timedelta(days=d.weekday())).isoformat()
+        return d.isoformat()
+
+    buckets: list = []
+    cur = ds
+    while cur <= du:
+        b = _bucket(cur.isoformat())
+        if not buckets or buckets[-1] != b:
+            buckets.append(b)
+        cur += timedelta(days=1)
+
+    agg: dict = {b: {"nl":0,"mb":0,"mh":0,"mql":0,"sql":0,"el_signed":0,"spend":0.0} for b in buckets}
+
+    for c in _load_hs_new_leads(d_since, d_until, mkt_only=False):
+        if c["attribution"] not in _META_ATTRS: continue
+        b = _bucket(c["date"])
+        if b in agg: agg[b]["nl"] += 1
+
+    for c in _load_hs_contacts(d_since, d_until, mkt_only=False):
+        if c["attribution"] not in _META_ATTRS: continue
+        b = _bucket(c["date"])
+        if b in agg:
+            agg[b]["mb"] += 1
+            if c.get("mql"):       agg[b]["mql"]       += 1
+            if c.get("sql"):       agg[b]["sql"]        += 1
+            if c.get("el_signed"): agg[b]["el_signed"]  += 1
+
+    for c in _load_hs_mh(d_since, d_until, mkt_only=False):
+        if c["attribution"] not in _META_ATTRS: continue
+        b = _bucket(c["date"])
+        if b in agg: agg[b]["mh"] += 1
+
+    token = get_token(); accounts_list = get_accounts()
+    if token and accounts_list:
+        try:
+            for acc in accounts_list:
+                for row in await _get_daily_insights(acc, token, d_since, d_until):
+                    b = _bucket(row.get("date_start", "")[:10])
+                    if b in agg:
+                        agg[b]["spend"] += float(row.get("spend", 0))
+        except Exception as e:
+            print(f"[metaperf/trend] spend fetch failed: {e}")
+
+    series = [{"date": b, **agg[b], "spend": round(agg[b]["spend"], 2)} for b in buckets]
+    return JSONResponse({
+        "since": d_since, "until": d_until,
+        "granularity": "week" if weekly else "day",
+        "series": series,
     })
